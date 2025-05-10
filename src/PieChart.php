@@ -2,9 +2,6 @@
 
 namespace Daikazu\CliCharts;
 
-
-
-
 /**
  * Pie Chart implementation for CLI
  */
@@ -12,6 +9,7 @@ class PieChart extends Chart
 {
     // Full block character for drawing the pie
     protected $fullBlock = '█';
+
     protected $emptyBlock = ' ';
 
     /**
@@ -26,7 +24,7 @@ class PieChart extends Chart
         // Calculate total and percentages
         $total = array_sum($this->data);
         if ($total <= 0) {
-            return $output . "Error: Total value must be greater than zero.\n";
+            return $output."Error: Total value must be greater than zero.\n";
         }
 
         $percentages = [];
@@ -56,7 +54,7 @@ class PieChart extends Chart
 
         // Render the canvas
         for ($y = 0; $y < $diameter; $y++) {
-            $output .= str_repeat(' ', $radius) . implode('', $canvas[$y]) . "\n";
+            $output .= str_repeat(' ', $radius).implode('', $canvas[$y])."\n";
         }
 
         $output .= "\n";
@@ -82,7 +80,7 @@ class PieChart extends Chart
 
             // Format: ■ Label: 42.5% (123)
             $formattedValue = number_format($value, 0, '.', ',');
-            $legendItem = sprintf("%s %s: %.1f%% (%s)",
+            $legendItem = sprintf('%s %s: %.1f%% (%s)',
                 $marker,
                 str_pad(substr($label, 0, min($maxLabelLength, 12)), min($maxLabelLength, 12), ' '),
                 $percentage,
@@ -97,12 +95,12 @@ class PieChart extends Chart
         $maxLegendItems = floor($this->height / 2); // Limit legend items based on height
 
         for ($i = 0; $i < min(count($legendLines), $maxLegendItems); $i++) {
-            $output .= str_repeat(' ', $radius) . $legendLines[$i] . "\n";
+            $output .= str_repeat(' ', $radius).$legendLines[$i]."\n";
         }
 
         // If there are more items than can fit, add a note
         if (count($legendLines) > $maxLegendItems) {
-            $output .= str_repeat(' ', $radius) . "(+" . (count($legendLines) - $maxLegendItems) . " more items)\n";
+            $output .= str_repeat(' ', $radius).'(+'.(count($legendLines) - $maxLegendItems)." more items)\n";
         }
 
         return $output;
@@ -111,10 +109,10 @@ class PieChart extends Chart
     /**
      * Draw the pie chart on the canvas
      *
-     * @param array $canvas The canvas to draw on
-     * @param int $radiusX The horizontal radius of the pie
-     * @param int $radiusY The vertical radius of the pie
-     * @param array $percentages The data percentages
+     * @param  array  $canvas  The canvas to draw on
+     * @param  int  $radiusX  The horizontal radius of the pie
+     * @param  int  $radiusY  The vertical radius of the pie
+     * @param  array  $percentages  The data percentages
      */
     protected function drawPieOnCanvas(&$canvas, $radiusX, $radiusY, $percentages)
     {
@@ -195,6 +193,7 @@ class PieChart extends Chart
                 $maxLength = $length;
             }
         }
+
         return $maxLength;
     }
 }

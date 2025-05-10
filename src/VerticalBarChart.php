@@ -13,14 +13,14 @@ class VerticalBarChart extends Chart
     protected $options = [
         'showValues' => false,  // Show values on top of bars
         'gridLines' => true,    // Show horizontal grid lines
-        'barWidth' => 1         // Width of each bar in characters
+        'barWidth' => 1,         // Width of each bar in characters
     ];
 
     /**
      * Constructor for VerticalBarChart
      *
-     * @param array $data Data to be displayed
-     * @param array $options Optional configuration
+     * @param  array  $data  Data to be displayed
+     * @param  array  $options  Optional configuration
      */
     public function __construct(array $data, array $options = [])
     {
@@ -28,11 +28,11 @@ class VerticalBarChart extends Chart
 
         // Merge chart-specific options
         if (isset($options['showValues'])) {
-            $this->options['showValues'] = (bool)$options['showValues'];
+            $this->options['showValues'] = (bool) $options['showValues'];
         }
 
         if (isset($options['gridLines'])) {
-            $this->options['gridLines'] = (bool)$options['gridLines'];
+            $this->options['gridLines'] = (bool) $options['gridLines'];
         }
 
         if (isset($options['barWidth']) && is_int($options['barWidth']) && $options['barWidth'] > 0) {
@@ -137,7 +137,7 @@ class VerticalBarChart extends Chart
 
             // Format y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │';
+                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT).' │';
             } else {
                 $output .= '      │';
             }
@@ -165,9 +165,9 @@ class VerticalBarChart extends Chart
                     // Show values only at the top segment of each bar
                     if (isset($this->options['showValues']) && $this->options['showValues'] &&
                         // Check if this is the top segment of the bar by checking the segment above
-                        ($y === 0 || ($y > 0 && isset($grid[$y-1][$barPosition]) && $grid[$y-1][$barPosition] !== '█'))) {
+                        ($y === 0 || ($y > 0 && isset($grid[$y - 1][$barPosition]) && $grid[$y - 1][$barPosition] !== '█'))) {
                         // Show value above the bar (if there's space)
-                        $valueStr = (string)$values[$i];
+                        $valueStr = (string) $values[$i];
                         if (strlen($valueStr) <= $barSpacing - 1) {
                             $output .= $this->colorize($valueStr, $color);
                             $output .= str_repeat(' ', $barSpacing - 1 - strlen($valueStr));
@@ -178,7 +178,7 @@ class VerticalBarChart extends Chart
                         $output .= str_repeat(' ', $barSpacing - 1);
                     }
                 } else {
-                    $output .= ' ' . str_repeat(' ', $barSpacing - 1);
+                    $output .= ' '.str_repeat(' ', $barSpacing - 1);
                 }
             }
 
@@ -186,7 +186,7 @@ class VerticalBarChart extends Chart
         }
 
         // Draw the x-axis with the correct length
-        $output .= '      └' . str_repeat('─', $totalBars * $barSpacing) . "\n";
+        $output .= '      └'.str_repeat('─', $totalBars * $barSpacing)."\n";
 
         // Draw labels below x-axis, aligned under each bar
         $labelRow = '';
@@ -221,7 +221,7 @@ class VerticalBarChart extends Chart
             $labelRow .= $displayLabel;
         }
 
-        $output .= $labelRow . "\n";
+        $output .= $labelRow."\n";
 
         // Add a legend with values
         $output .= "\n";
@@ -237,7 +237,7 @@ class VerticalBarChart extends Chart
 
             // Format: Label: Value (with abbreviated label)
             $abbreviatedLabel = $this->abbreviateLabel($label);
-            $valueLabels[] = $this->colorize($abbreviatedLabel, $color) . ': ' . $value;
+            $valueLabels[] = $this->colorize($abbreviatedLabel, $color).': '.$value;
         }
 
         // Display the legend in multiple columns if needed
@@ -248,67 +248,68 @@ class VerticalBarChart extends Chart
             $itemWithoutColors = preg_replace('/\033\[\d+m/', '', $item);
 
             // Check if adding this item would exceed the width
-            if (strlen($currentLine) + strlen($itemWithoutColors) + 2 > $legendWidth && !empty($currentLine)) {
-                $output .= '      ' . $currentLine . "\n";
+            if (strlen($currentLine) + strlen($itemWithoutColors) + 2 > $legendWidth && ! empty($currentLine)) {
+                $output .= '      '.$currentLine."\n";
                 $currentLine = $item;
             } else {
                 // Use semicolon as separator instead of comma to avoid confusion with multi-word labels
-                $separator = ($index > 0 && !empty($currentLine)) ? '; ' : '';
-                $currentLine .= $separator . $item;
+                $separator = ($index > 0 && ! empty($currentLine)) ? '; ' : '';
+                $currentLine .= $separator.$item;
             }
         }
 
-        if (!empty($currentLine)) {
-            $output .= '      ' . $currentLine . "\n";
+        if (! empty($currentLine)) {
+            $output .= '      '.$currentLine."\n";
         }
 
         return $output;
-            }
+    }
 
-            /**
-             * Abbreviate multi-word labels while maintaining uniqueness
-             *
-             * @param string $label The original label
-             * @return string The abbreviated label
-             */
-            protected function abbreviateLabel($label)
-            {
+    /**
+     * Abbreviate multi-word labels while maintaining uniqueness
+     *
+     * @param  string  $label  The original label
+     * @return string The abbreviated label
+     */
+    protected function abbreviateLabel($label)
+    {
         // If it's a single word or already short, return as is
-                if (strpos($label, ' ') === false || strlen($label) <= 6) {
-                    return $label;
-                }
+        if (strpos($label, ' ') === false || strlen($label) <= 6) {
+            return $label;
+        }
 
-                $words = explode(' ', $label);
+        $words = explode(' ', $label);
 
-                // Special case: If the label follows a pattern like "Something X" where X is a single character
-                // or digit, keep the format but abbreviate the first word if needed
-                if (count($words) == 2 && strlen($words[1]) <= 2) {
-                    $firstWord = $words[0];
-                    // If the first word is long, abbreviate it to 1-3 chars
-                    if (strlen($firstWord) > 3) {
-                        $abbreviation = substr($firstWord, 0, 1);
-                        return $abbreviation . ' ' . $words[1];
-                    } else {
-                        // First word is already short
-                        return $label;
-                    }
-                }
+        // Special case: If the label follows a pattern like "Something X" where X is a single character
+        // or digit, keep the format but abbreviate the first word if needed
+        if (count($words) == 2 && strlen($words[1]) <= 2) {
+            $firstWord = $words[0];
+            // If the first word is long, abbreviate it to 1-3 chars
+            if (strlen($firstWord) > 3) {
+                $abbreviation = substr($firstWord, 0, 1);
 
-                $result = '';
+                return $abbreviation.' '.$words[1];
+            } else {
+                // First word is already short
+                return $label;
+            }
+        }
 
-                // Process each word
-                foreach ($words as $index => $word) {
-                    // First word: use first letter only to save space
-                    if ($index === 0) {
-                        $result .= substr($word, 0, 1);
+        $result = '';
+
+        // Process each word
+        foreach ($words as $index => $word) {
+            // First word: use first letter only to save space
+            if ($index === 0) {
+                $result .= substr($word, 0, 1);
             }
             // Last word: keep it intact to maintain uniqueness
-            else if ($index === count($words) - 1) {
-                $result .= ' ' . $word;
+            elseif ($index === count($words) - 1) {
+                $result .= ' '.$word;
             }
             // Middle words: use first letter only
             else {
-                $result .= ' ' . substr($word, 0, 1);
+                $result .= ' '.substr($word, 0, 1);
             }
         }
 
@@ -328,6 +329,7 @@ class VerticalBarChart extends Chart
                 $min = $value;
             }
         }
+
         // For bar charts, we typically want to start at 0 unless
         // we have negative values
         return $min < 0 ? $min : 0;
@@ -347,13 +349,14 @@ class VerticalBarChart extends Chart
                 $maxLength = $length;
             }
         }
+
         return $maxLength;
     }
 
     /**
      * Create a concise x-axis label that preserves uniqueness
      *
-     * @param string $label The original label
+     * @param  string  $label  The original label
      * @return string The shortened label
      */
     private function createXAxisLabel($label)
@@ -368,7 +371,7 @@ class VerticalBarChart extends Chart
         // For labels like "Category A", "Team B", etc.
         if (count($words) == 2 && strlen($words[1]) <= 2) {
             // Use first letter of first word + second word
-            return substr($words[0], 0, 1) . ' ' . $words[1];
+            return substr($words[0], 0, 1).' '.$words[1];
         }
 
         // For other multi-word labels
@@ -381,6 +384,7 @@ class VerticalBarChart extends Chart
                     $result .= ' ';
                 }
             }
+
             return $result;
         }
 
@@ -391,7 +395,7 @@ class VerticalBarChart extends Chart
     /**
      * Detect if labels share a common prefix pattern
      *
-     * @param array $labels Array of label strings
+     * @param  array  $labels  Array of label strings
      * @return string|null Common prefix if found, null otherwise
      */
     private function detectCommonPrefix(array $labels)
@@ -434,25 +438,26 @@ class VerticalBarChart extends Chart
     /**
      * Get a display label with appropriate abbreviation based on context
      *
-     * @param string $label Original label
-     * @param string|null $commonPrefix Common prefix detected across labels
+     * @param  string  $label  Original label
+     * @param  string|null  $commonPrefix  Common prefix detected across labels
      * @return string Formatted display label
      */
     private function getDisplayLabel($label, $commonPrefix = null)
     {
         // If we have a common prefix pattern (like "Category A", "Category B")
-        if ($commonPrefix !== null && strpos($label, $commonPrefix . ' ') === 0) {
+        if ($commonPrefix !== null && strpos($label, $commonPrefix.' ') === 0) {
             $parts = explode(' ', $label);
 
             // If it's a two-part label like "Category A"
             if (count($parts) == 2) {
                 // Just return the first letter of the prefix + the suffix
-                return substr($commonPrefix, 0, 1) . ' ' . $parts[1];
+                return substr($commonPrefix, 0, 1).' '.$parts[1];
             }
 
             // For more complex labels starting with the common prefix
             $suffix = substr($label, strlen($commonPrefix) + 1);
-            return substr($commonPrefix, 0, 1) . ' ' . $suffix;
+
+            return substr($commonPrefix, 0, 1).' '.$suffix;
         }
 
         // If it's a multi-word label but doesn't match the common pattern
@@ -466,10 +471,10 @@ class VerticalBarChart extends Chart
                     $result .= substr($word, 0, min(2, strlen($word)));
                 } elseif ($index === count($words) - 1) {
                     // Last word: keep fully
-                    $result .= ' ' . $word;
+                    $result .= ' '.$word;
                 } else {
                     // Middle words: first letter
-                    $result .= ' ' . substr($word, 0, 1);
+                    $result .= ' '.substr($word, 0, 1);
                 }
             }
 

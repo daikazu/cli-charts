@@ -2,35 +2,38 @@
 
 namespace Daikazu\CliCharts;
 
-
 /**
  * Base Chart class for CLI rendering
  */
 abstract class Chart
 {
     protected $data = [];
+
     protected $width = 60;
+
     protected $height = 15;
+
     protected $title = '';
+
     protected $colors = true;
 
     // ANSI color codes
     protected $colorCodes = [
-        'reset'     => "\033[0m",
-        'red'       => "\033[31m",
-        'green'     => "\033[32m",
-        'yellow'    => "\033[33m",
-        'blue'      => "\033[34m",
-        'magenta'   => "\033[35m",
-        'cyan'      => "\033[36m",
-        'white'     => "\033[37m",
+        'reset' => "\033[0m",
+        'red' => "\033[31m",
+        'green' => "\033[32m",
+        'yellow' => "\033[33m",
+        'blue' => "\033[34m",
+        'magenta' => "\033[35m",
+        'cyan' => "\033[36m",
+        'white' => "\033[37m",
     ];
 
     /**
      * Constructor for Chart
      *
-     * @param array $data Data to be displayed
-     * @param array $options Optional configuration
+     * @param  array  $data  Data to be displayed
+     * @param  array  $options  Optional configuration
      */
     public function __construct(array $data, array $options = [])
     {
@@ -56,17 +59,17 @@ abstract class Chart
     /**
      * Apply color to text if colors are enabled
      *
-     * @param string $text Text to color
-     * @param string $color Color to apply
+     * @param  string  $text  Text to color
+     * @param  string  $color  Color to apply
      * @return string Colored text or original text
      */
     protected function colorize($text, $color)
     {
-        if (!$this->colors || !isset($this->colorCodes[$color])) {
+        if (! $this->colors || ! isset($this->colorCodes[$color])) {
             return $text;
         }
 
-        return $this->colorCodes[$color] . $text . $this->colorCodes['reset'];
+        return $this->colorCodes[$color].$text.$this->colorCodes['reset'];
     }
 
     /**
@@ -81,7 +84,8 @@ abstract class Chart
         }
 
         $padding = max(0, floor(($this->width - strlen($this->title)) / 2));
-        return str_repeat(' ', $padding) . $this->colorize($this->title, 'cyan') . "\n\n";
+
+        return str_repeat(' ', $padding).$this->colorize($this->title, 'cyan')."\n\n";
     }
 
     /**
@@ -97,6 +101,7 @@ abstract class Chart
                 $max = $value;
             }
         }
+
         return $max;
     }
 

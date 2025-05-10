@@ -2,9 +2,9 @@
 
 namespace Daikazu\CliCharts\Tests;
 
+use Daikazu\CliCharts\CliChartsServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Orchestra\Testbench\TestCase as Orchestra;
-use Daikazu\CliCharts\CliChartsServiceProvider;
 
 class TestCase extends Orchestra
 {

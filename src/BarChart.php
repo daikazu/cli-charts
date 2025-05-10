@@ -34,7 +34,7 @@ class BarChart extends Chart
             $colorIndex = crc32($label) % (count($colorKeys) - 1); // -1 to skip 'reset'
             $color = $colorKeys[$colorIndex + 1]; // +1 to skip 'reset'
 
-            $output .= $labelOutput . ' │ ' . $this->colorize($bar, $color) . ' ' . $value . "\n";
+            $output .= $labelOutput.' │ '.$this->colorize($bar, $color).' '.$value."\n";
         }
 
         return $output;
@@ -54,6 +54,7 @@ class BarChart extends Chart
                 $maxLength = $length;
             }
         }
+
         return $maxLength;
     }
 }

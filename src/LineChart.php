@@ -2,7 +2,6 @@
 
 namespace Daikazu\CliCharts;
 
-
 /**
  * Line Chart implementation for CLI
  */
@@ -127,7 +126,7 @@ class LineChart extends Chart
 
             // Format the y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │ ';
+                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT).' │ ';
             } else {
                 $output .= '      │ ';
             }
@@ -137,7 +136,7 @@ class LineChart extends Chart
                 // Display the cell content with appropriate color
                 if ($row[$x] === '●') {
                     $output .= $this->colorize($row[$x], 'red');
-                } else if ($row[$x] === '/' || $row[$x] === '\\' || $row[$x] === '─') {
+                } elseif ($row[$x] === '/' || $row[$x] === '\\' || $row[$x] === '─') {
                     $output .= $this->colorize($row[$x], 'blue');
                 } else {
                     $output .= $row[$x];
@@ -147,15 +146,15 @@ class LineChart extends Chart
         }
 
         // Draw the x-axis line
-        $output .= '      └' . str_repeat('─', count($points) * 2) . "\n";
+        $output .= '      └'.str_repeat('─', count($points) * 2)."\n";
 
         // Draw x-axis labels
         $output .= '       ';
-        
+
         // First pass: check if labels follow a pattern like "Category A", "Category B"
         $hasPattern = false;
         $commonPrefix = null;
-        
+
         // Check if we have labels with a consistent pattern (first word + identifier)
         if (count($labels) > 1) {
             $firstWords = [];
@@ -165,7 +164,7 @@ class LineChart extends Chart
                     $firstWords[] = $parts[0];
                 }
             }
-            
+
             if (count($firstWords) > 0) {
                 $uniqueFirstWords = array_unique($firstWords);
                 if (count($uniqueFirstWords) === 1) {
@@ -174,10 +173,10 @@ class LineChart extends Chart
                 }
             }
         }
-        
+
         for ($i = 0; $i < count($labels); $i++) {
             $label = $labels[$i];
-            
+
             // Create a smart abbreviation for the label
             if ($hasPattern && strpos($label, $commonPrefix) === 0) {
                 // For labels like "Category A", just use "A"
@@ -187,7 +186,7 @@ class LineChart extends Chart
                 } else {
                     $labelText = substr($label, 0, 2);
                 }
-            } else if (strpos($label, ' ') !== false) {
+            } elseif (strpos($label, ' ') !== false) {
                 // For other multi-word labels
                 $parts = explode(' ', $label);
                 $labelText = '';
@@ -214,7 +213,7 @@ class LineChart extends Chart
                     $output .= $labelText;
                 } else {
                     // If we're already past the target (shouldn't happen but just in case)
-                    $output .= ' ' . $labelText;
+                    $output .= ' '.$labelText;
                 }
             }
         }
@@ -241,6 +240,7 @@ class LineChart extends Chart
         if ($min > 0 && $min < 0.3 * $this->getMaxValue()) {
             return 0;
         }
+
         return $min;
     }
 }
