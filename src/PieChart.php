@@ -195,7 +195,7 @@ class PieChart extends Chart
         }
 
         // Sort pixels by angle to distribute segments properly
-        usort($piePixelCoordinates, function($a, $b) use ($centerX, $centerY) {
+        usort($piePixelCoordinates, function ($a, $b) use ($centerX, $centerY) {
             // Calculate angles for both pixels (in radians)
             $angleA = atan2($a[1] - $centerY, $a[0] - $centerX);
             $angleB = atan2($b[1] - $centerY, $b[0] - $centerX);

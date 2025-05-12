@@ -61,7 +61,7 @@ class LineChart extends Chart
 
             if ($prev_y == $curr_y) {
                 // Simple horizontal line between points on the same level
-                for ($x = $prev_x + 1; $x < $curr_x; ++$x) {
+                for ($x = $prev_x + 1; $x < $curr_x; $x++) {
                     $grid[$prev_y][$x] = '─';
                 }
             } else {
@@ -73,12 +73,12 @@ class LineChart extends Chart
 
                 // Draw horizontal segment from previous point
                 $middleX = $prev_x + 2; // Stop horizontal line 2 characters after the previous point
-                for ($x = $prev_x + 1; $x < $middleX; ++$x) {
+                for ($x = $prev_x + 1; $x < $middleX; $x++) {
                     $grid[$prev_y][$x] = '─';
                 }
 
                 // Place corner at the bend point
-//                $grid[$prev_y][$middleX] = ($step === 1) ? '╯' : '╮';
+                //                $grid[$prev_y][$middleX] = ($step === 1) ? '╯' : '╮';
                 $grid[$prev_y][$middleX] = ($step === 1) ? '╮' : '╯';
 
                 // Draw vertical line after the corner
@@ -90,7 +90,7 @@ class LineChart extends Chart
                 $grid[$curr_y][$middleX] = ($step === 1) ? '╰' : '╭';
 
                 // Draw horizontal line to the current point
-                for ($x = $middleX + 1; $x < $curr_x; ++$x) {
+                for ($x = $middleX + 1; $x < $curr_x; $x++) {
                     $grid[$curr_y][$x] = '─';
                 }
             }
@@ -254,7 +254,7 @@ class LineChart extends Chart
     /**
      * Calculate the required width based on label lengths
      *
-     * @param array $labels Array of labels
+     * @param  array  $labels  Array of labels
      * @return int Required width in characters
      */
     private function calculateRequiredWidth(array $labels)
