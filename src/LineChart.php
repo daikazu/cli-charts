@@ -23,13 +23,17 @@ class LineChart extends Chart
         $points = array_values($this->data);
         $labels = array_keys($this->data);
 
+        // Calculate required width based on labels
+        $requiredWidth = $this->calculateRequiredWidth($labels);
+        $this->width = max($this->width, $requiredWidth);
+
         // Calculate the actual height (excluding axes and labels)
         $chartHeight = $this->height - 1;
 
         // Create a 2D grid for the chart (filled with spaces)
         $grid = [];
         for ($y = 0; $y < $chartHeight; $y++) {
-            $grid[$y] = array_fill(0, count($points) * 2, ' '); // Double the width to ensure proper spacing
+            $grid[$y] = array_fill(0, count($points) * 4, ' '); // Use 4 spaces between points
         }
 
         // Calculate positions for each data point
@@ -45,45 +49,49 @@ class LineChart extends Chart
             }
             $y = max(0, min($chartHeight - 1, $y)); // Ensure y is within bounds
             $positions[$i] = $y;
-            $grid[$y][$i * 2] = '●'; // Position points with proper spacing
+            $grid[$y][$i * 4] = '●'; // Position points with proper spacing
         }
 
-        // Add connecting lines between points
+        // Add connecting lines between points - with improved, cleaner connections
         for ($i = 1; $i < count($positions); $i++) {
             $prev_y = $positions[$i - 1];
             $curr_y = $positions[$i];
-            $prev_x = ($i - 1) * 2; // Calculate x position with spacing
-            $curr_x = $i * 2;       // Calculate x position with spacing
+            $prev_x = ($i - 1) * 4;
+            $curr_x = $i * 4;
 
-            // Draw line between points
             if ($prev_y == $curr_y) {
-                // Horizontal line
-                for ($x = $prev_x + 1; $x < $curr_x; $x++) {
+                // Simple horizontal line between points on the same level
+                for ($x = $prev_x + 1; $x < $curr_x; ++$x) {
                     $grid[$prev_y][$x] = '─';
                 }
             } else {
-                // Diagonal line
-                $start_y = min($prev_y, $curr_y);
-                $end_y = max($prev_y, $curr_y);
+                // Determine direction (going up or down)
+                $step = ($curr_y > $prev_y) ? 1 : -1;
 
-                // Determine the direction
-                $going_up = $prev_y > $curr_y;
+                // Cleaner approach: Draw horizontal line from previous point
+                // then add a corner, then vertical line, then connect to next point
 
-                // Calculate the slope
-                $slope = ($curr_y - $prev_y) / ($curr_x - $prev_x);
+                // Draw horizontal segment from previous point
+                $middleX = $prev_x + 2; // Stop horizontal line 2 characters after the previous point
+                for ($x = $prev_x + 1; $x < $middleX; ++$x) {
+                    $grid[$prev_y][$x] = '─';
+                }
 
-                // Draw the connecting line
-                for ($x = $prev_x + 1; $x < $curr_x; $x++) {
-                    // Calculate the y position for this x using linear interpolation
-                    $interpolated_y = $prev_y + round(($x - $prev_x) * $slope);
-                    $interpolated_y = max(0, min($chartHeight - 1, $interpolated_y));
+                // Place corner at the bend point
+//                $grid[$prev_y][$middleX] = ($step === 1) ? '╯' : '╮';
+                $grid[$prev_y][$middleX] = ($step === 1) ? '╮' : '╯';
 
-                    // Use appropriate connector based on direction
-                    if ($going_up) {
-                        $grid[$interpolated_y][$x] = '/';
-                    } else {
-                        $grid[$interpolated_y][$x] = '\\';
-                    }
+                // Draw vertical line after the corner
+                for ($y = $prev_y + $step; $y != $curr_y; $y += $step) {
+                    $grid[$y][$middleX] = '│';
+                }
+
+                // Place the corner at the bottom/top of the line
+                $grid[$curr_y][$middleX] = ($step === 1) ? '╰' : '╭';
+
+                // Draw horizontal line to the current point
+                for ($x = $middleX + 1; $x < $curr_x; ++$x) {
+                    $grid[$curr_y][$x] = '─';
                 }
             }
         }
@@ -136,7 +144,7 @@ class LineChart extends Chart
                 // Display the cell content with appropriate color
                 if ($row[$x] === '●') {
                     $output .= $this->colorize($row[$x], 'red');
-                } elseif ($row[$x] === '/' || $row[$x] === '\\' || $row[$x] === '─') {
+                } elseif (in_array($row[$x], ['╭', '╮', '╯', '╰', '│', '─'])) {
                     $output .= $this->colorize($row[$x], 'blue');
                 } else {
                     $output .= $row[$x];
@@ -145,8 +153,8 @@ class LineChart extends Chart
             $output .= "\n";
         }
 
-        // Draw the x-axis line
-        $output .= '      └'.str_repeat('─', count($points) * 2)."\n";
+        // Draw the x-axis line with improved characters
+        $output .= '      └'.str_repeat('─', count($points) * 4)."\n";
 
         // Draw x-axis labels
         $output .= '       ';
@@ -198,23 +206,22 @@ class LineChart extends Chart
                 $labelText = substr($label, 0, 2);
             }
 
-            // For first label, just add it
-            if ($i === 0) {
-                $output .= $labelText;
-            } else {
-                // For other labels, add enough space to position it correctly
-                // Calculate absolute position for this label (7 chars offset + 2*i for proper alignment)
-                $targetPosition = 7 + ($i * 2);
-                $currentPosition = strlen($output);
+            // Calculate position for this label
+            // 7 chars for left margin + position of the point (i * 4)
+            $targetPosition = 7 + ($i * 4);
+            $currentPosition = strlen($output);
 
-                // Add spaces to reach the target position
-                if ($targetPosition > $currentPosition) {
-                    $output .= str_repeat(' ', $targetPosition - $currentPosition);
-                    $output .= $labelText;
-                } else {
-                    // If we're already past the target (shouldn't happen but just in case)
-                    $output .= ' '.$labelText;
-                }
+            // Add spaces to reach the target position
+            if ($targetPosition > $currentPosition) {
+                $output .= str_repeat(' ', $targetPosition - $currentPosition);
+            }
+
+            // Add the label with proper spacing
+            $output .= $labelText;
+
+            // Add extra space after the label if it's not the last one
+            if ($i < count($labels) - 1) {
+                $output .= '  ';
             }
         }
         $output .= "\n";
@@ -242,5 +249,29 @@ class LineChart extends Chart
         }
 
         return $min;
+    }
+
+    /**
+     * Calculate the required width based on label lengths
+     *
+     * @param array $labels Array of labels
+     * @return int Required width in characters
+     */
+    private function calculateRequiredWidth(array $labels)
+    {
+        $totalPoints = count($labels);
+        if ($totalPoints === 0) {
+            return $this->width;
+        }
+
+        // Calculate minimum spacing needed between points
+        $minSpacing = 4; // Minimum characters between points
+        $leftMargin = 7; // Space for y-axis labels
+        $rightMargin = 2; // Space for right edge
+
+        // Calculate total width needed
+        $totalWidth = $leftMargin + ($totalPoints - 1) * $minSpacing + $rightMargin;
+
+        return $totalWidth;
     }
 }
