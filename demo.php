@@ -60,5 +60,7 @@ demoChart('bar', 'Monthly Expenses ($)', $categoryData);
 demoChart('vbar', 'Monthly Sales', $salesData, ['showValues' => true, 'gridLines' => true]);
 demoChart('line', 'Sales Trend', $salesData);
 demoChart('pie', 'Browser Market Share', $marketShare);
+demoChart('stacked', 'Browser Market Share', $marketShare);
+demoChart('percent', 'Browser Market Share', $marketShare);
 
 echo "=== Demo Complete ===\n\n";

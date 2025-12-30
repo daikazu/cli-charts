@@ -3,7 +3,9 @@
 use Daikazu\CliCharts\BarChart;
 use Daikazu\CliCharts\ChartFactory;
 use Daikazu\CliCharts\LineChart;
+use Daikazu\CliCharts\PercentageBarChart;
 use Daikazu\CliCharts\PieChart;
+use Daikazu\CliCharts\StackedBarChart;
 use Daikazu\CliCharts\VerticalBarChart;
 
 test('creates bar chart', function () {
@@ -40,4 +42,28 @@ test('chart type is case insensitive', function () {
 
     expect($chart1)->toBeInstanceOf(BarChart::class);
     expect($chart2)->toBeInstanceOf(BarChart::class);
+});
+
+test('creates stacked bar chart', function () {
+    $chart = ChartFactory::create('stacked', ['A' => 10, 'B' => 20]);
+
+    expect($chart)->toBeInstanceOf(StackedBarChart::class);
+});
+
+test('creates stacked bar chart with alias', function () {
+    $chart = ChartFactory::create('sbar', ['A' => 10, 'B' => 20]);
+
+    expect($chart)->toBeInstanceOf(StackedBarChart::class);
+});
+
+test('creates percentage bar chart', function () {
+    $chart = ChartFactory::create('percent', ['A' => 10, 'B' => 20]);
+
+    expect($chart)->toBeInstanceOf(PercentageBarChart::class);
+});
+
+test('creates percentage bar chart with alias', function () {
+    $chart = ChartFactory::create('pbar', ['A' => 10, 'B' => 20]);
+
+    expect($chart)->toBeInstanceOf(PercentageBarChart::class);
 });
