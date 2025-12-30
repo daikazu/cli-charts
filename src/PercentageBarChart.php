@@ -12,7 +12,7 @@ class PercentageBarChart extends Chart
     /**
      * Block characters for partial fills (eighths)
      */
-    private const BLOCKS = [
+    private const array BLOCKS = [
         0 => ' ',
         1 => '▏',
         2 => '▎',

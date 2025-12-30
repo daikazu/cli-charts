@@ -12,7 +12,7 @@ class StackedBarChart extends Chart
     /**
      * Block characters for partial fills
      */
-    private const BLOCKS = [
+    private const array BLOCKS = [
         0 => ' ',
         1 => '▏',
         2 => '▎',
@@ -115,7 +115,7 @@ class StackedBarChart extends Chart
         }
 
         // Calculate spacing
-        $totalTextLength = array_sum(array_map(fn ($item) => strlen($item['text']), $legendItems));
+        $totalTextLength = array_sum(array_map(fn (array $item): int => strlen((string) $item['text']), $legendItems));
         $availableSpace = $this->width - 2 - $totalTextLength;
         $gaps = max(1, count($legendItems) - 1);
         $spacing = max(2, (int) floor($availableSpace / $gaps));

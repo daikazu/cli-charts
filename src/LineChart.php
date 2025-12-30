@@ -9,7 +9,7 @@ namespace Daikazu\CliCharts;
  */
 class LineChart extends Chart
 {
-    private const BRAILLE_BASE = 0x2800;
+    private const int BRAILLE_BASE = 0x2800;
 
     /**
      * Render a line chart with smooth Braille-based lines
@@ -18,7 +18,7 @@ class LineChart extends Chart
     {
         $output = $this->drawTitle();
 
-        if (empty($this->data)) {
+        if ($this->data === []) {
             return $output;
         }
 
@@ -114,7 +114,7 @@ class LineChart extends Chart
         // Render the grid as Braille characters
         for ($charY = 0; $charY < $chartHeight; $charY++) {
             // Y-axis label
-            $yValue = $this->getYLabelForRow($charY, $chartHeight, $minValue, $maxValue, $yLabels);
+            $yValue = $this->getYLabelForRow($charY, $chartHeight, $yLabels);
             if ($yValue !== null) {
                 $output .= str_pad((string) $yValue, $yAxisWidth - 1, ' ', STR_PAD_LEFT) . ' │';
             } else {
@@ -143,6 +143,26 @@ class LineChart extends Chart
         $output .= $this->drawXAxisLabels($labels, $chartWidth, $yAxisWidth);
 
         return $output;
+    }
+
+    /**
+     * Find the minimum value in the data set
+     */
+    protected function getMinValue(): float
+    {
+        $min = PHP_FLOAT_MAX;
+        foreach ($this->data as $value) {
+            if (is_numeric($value) && $value < $min) {
+                $min = (float) $value;
+            }
+        }
+
+        // Start from 0 if min is positive and not too far from 0
+        if ($min > 0 && $min < 0.3 * $this->getMaxValue()) {
+            return 0;
+        }
+
+        return $min;
     }
 
     /**
@@ -225,7 +245,7 @@ class LineChart extends Chart
     {
         $labels = [];
 
-        if ($max == $min) {
+        if ($max === $min) {
             return [(int) round($max)];
         }
 
@@ -243,7 +263,7 @@ class LineChart extends Chart
     /**
      * Get the Y label for a specific row, if any
      */
-    private function getYLabelForRow(int $row, int $totalRows, float $min, float $max, array $yLabels): ?int
+    private function getYLabelForRow(int $row, int $totalRows, array $yLabels): ?int
     {
         $numLabels = count($yLabels);
         if ($numLabels === 0) {
@@ -252,11 +272,7 @@ class LineChart extends Chart
 
         // Calculate which label positions map to which rows
         for ($i = 0; $i < $numLabels; $i++) {
-            if ($numLabels === 1) {
-                $labelRow = (int) ($totalRows / 2);
-            } else {
-                $labelRow = (int) round($i / ($numLabels - 1) * ($totalRows - 1));
-            }
+            $labelRow = $numLabels === 1 ? (int) ($totalRows / 2) : (int) round($i / ($numLabels - 1) * ($totalRows - 1));
             if ($labelRow === $row) {
                 return $yLabels[$i];
             }
@@ -319,25 +335,5 @@ class LineChart extends Chart
 
         // Single word: first 3 chars
         return substr($label, 0, 3);
-    }
-
-    /**
-     * Find the minimum value in the data set
-     */
-    protected function getMinValue(): float
-    {
-        $min = PHP_FLOAT_MAX;
-        foreach ($this->data as $value) {
-            if (is_numeric($value) && $value < $min) {
-                $min = (float) $value;
-            }
-        }
-
-        // Start from 0 if min is positive and not too far from 0
-        if ($min > 0 && $min < 0.3 * $this->getMaxValue()) {
-            return 0;
-        }
-
-        return $min;
     }
 }

@@ -17,25 +17,7 @@ class PieChart extends Chart
      *   2  5
      *   6  7
      */
-    private const BRAILLE_BASE = 0x2800;
-
-    /**
-     * Get the braille dot bit for a given row/col position
-     * Row 0-3 (top to bottom), Col 0-1 (left to right)
-     */
-    private function getDotBit(int $row, int $col): int
-    {
-        // Braille dot pattern bits
-        $dotBits = [
-            // col 0    col 1
-            [0x01,     0x08],   // row 0
-            [0x02,     0x10],   // row 1
-            [0x04,     0x20],   // row 2
-            [0x40,     0x80],   // row 3
-        ];
-
-        return $dotBits[$row][$col];
-    }
+    private const int BRAILLE_BASE = 0x2800;
 
     /**
      * Render a pie chart using Braille characters
@@ -134,7 +116,7 @@ class PieChart extends Chart
                 }
 
                 // Render the character
-                if (empty($dotsPerSegment)) {
+                if ($dotsPerSegment === []) {
                     $output .= ' ';
                 } else {
                     // Find the dominant segment (most dots)
@@ -164,6 +146,24 @@ class PieChart extends Chart
         $output .= $this->drawLegend($segments, $segmentColors);
 
         return $output;
+    }
+
+    /**
+     * Get the braille dot bit for a given row/col position
+     * Row 0-3 (top to bottom), Col 0-1 (left to right)
+     */
+    private function getDotBit(int $row, int $col): int
+    {
+        // Braille dot pattern bits
+        $dotBits = [
+            // col 0    col 1
+            [0x01,     0x08],   // row 0
+            [0x02,     0x10],   // row 1
+            [0x04,     0x20],   // row 2
+            [0x40,     0x80],   // row 3
+        ];
+
+        return $dotBits[$row][$col];
     }
 
     /**

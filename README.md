@@ -1,153 +1,433 @@
 # PHP CLI Charts
 
-
-
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/daikazu/cli-charts.svg?style=flat-square)](https://packagist.org/packages/daikazu/cli-charts)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/daikazu/cli-charts/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/daikazu/cli-charts/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/daikazu/cli-charts/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/daikazu/cli-charts/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/daikazu/cli-charts.svg?style=flat-square)](https://packagist.org/packages/daikazu/cli-charts)
 
-A simple PHP package for rendering beautiful charts in the command line interface.
+A PHP library for rendering beautiful charts in the command line using Unicode characters, Braille patterns, and ANSI colors.
 
 ## Features
 
-- Render bar charts and line charts in the terminal
-- Customizable chart dimensions
-- ANSI color support (with graceful fallback for terminals without color)
-- Simple API with factory pattern
+- 6 chart types: Bar, Vertical Bar, Line, Pie, Stacked Bar, and Percentage Bar
+- High-resolution rendering using Braille characters for smooth curves and lines
+- ANSI color support with automatic color cycling
+- Customizable dimensions, titles, and display options
+- Simple factory pattern API
+- Requires PHP 8.4+
 
 ## Installation
 
-You can install the package via composer:
-
 ```bash
-composer require your-username/php-cli-charts
+composer require daikazu/cli-charts
 ```
 
-## Usage
-
-### Basic Example
+## Quick Start
 
 ```php
 <?php
 
-require 'vendor/autoload.php';
+use Daikazu\CliCharts\ChartFactory;
 
-use CLICharts\ChartFactory;
-
-// Create data for the chart
 $data = [
-    'Category A' => 25,
-    'Category B' => 40,
-    'Category C' => 75,
-    'Category D' => 30
+    'Jan' => 120,
+    'Feb' => 180,
+    'Mar' => 150,
+    'Apr' => 220,
 ];
 
-// Create a bar chart
 $chart = ChartFactory::create('bar', $data, [
-    'title' => 'Sample Bar Chart',
-    'width' => 80,
-    'height' => 15,
-    'colors' => true
+    'title' => 'Monthly Sales',
+    'width' => 60,
 ]);
 
-// Render the chart to the console
 echo $chart->render();
 ```
 
-### Available Chart Types
-
-1. **Bar Chart** - Displays horizontal bars for each category
-
-   ```php
-   $chart = ChartFactory::create('bar', $data, $options);
-   ```
-
-2. **Vertical Bar Chart** - Displays vertical bars for each category
-
-   ```php
-   $chart = ChartFactory::create('vbar', $data, $options);
-   ```
-
-3. **Line Chart** - Displays a simple line chart connecting data points
-
-   ```php
-   $chart = ChartFactory::create('line', $data, $options);
-   ```
-
-4. **Pie Chart** - Displays a pie chart with percentage distribution
-
-   ```php
-   $chart = ChartFactory::create('pie', $data, $options);
-   ```
-
-### Configuration Options
-
-You can customize the charts with these options:
-
-- `width` - Total width of the chart in characters (default: 60)
-- `height` - Height of the chart in lines (default: 15)
-- `title` - Title to display above the chart
-- `colors` - Enable/disable ANSI colors (default: true)
-
-#### Vertical Bar Chart Options
-
-Vertical bar charts support additional options:
-
-- `showValues` - Display values on top of bars (default: false)
-- `gridLines` - Show horizontal grid lines for easier reading (default: true)
-- `barWidth` - Width of each bar in characters (default: 1)
-
-```php
-$chart = ChartFactory::create('vbar', $data, [
-    'title' => 'Monthly Sales',
-    'width' => 80,
-    'height' => 20,
-    'showValues' => true,
-    'gridLines' => true
-]);
-
-## Example Output
+## Chart Types
 
 ### Bar Chart
 
-```
-                      Monthly Expenses (in $)                      
+Horizontal bar chart with colored bars proportional to values.
 
-Food          │ ████████████████████████ 1200
-Rent          │ ████████████████████████████████████████ 1800
-Transport     │ ████████ 400
-Entertainment │ ███████ 350
-Utilities     │ █████ 250
-Savings       │ ██████████ 500
+```php
+$chart = ChartFactory::create('bar', $data, $options);
 ```
+
+**Example:**
+
+```php
+$data = [
+    'Food'          => 1200,
+    'Rent'          => 1800,
+    'Transport'     => 400,
+    'Entertainment' => 350,
+    'Utilities'     => 250,
+];
+
+$chart = ChartFactory::create('bar', $data, [
+    'title' => 'Monthly Expenses ($)',
+    'width' => 60,
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                    Monthly Expenses ($)
+
+Food          │ █████████████████████████████ 1200
+Rent          │ ████████████████████████████████████████████ 1800
+Transport     │ ██████████ 400
+Entertainment │ █████████ 350
+Utilities     │ ██████ 250
+```
+
+---
+
+### Vertical Bar Chart
+
+Vertical bar chart with optional grid lines, value display, and legend.
+
+```php
+$chart = ChartFactory::create('vbar', $data, $options);
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `showValues` | bool | `false` | Display values above bars |
+| `gridLines` | bool | `true` | Show horizontal grid lines |
+| `barWidth` | int | `1` | Width of each bar in characters |
+
+**Example:**
+
+```php
+$data = [
+    'Jan' => 120,
+    'Feb' => 180,
+    'Mar' => 150,
+    'Apr' => 220,
+    'May' => 190,
+    'Jun' => 250,
+];
+
+$chart = ChartFactory::create('vbar', $data, [
+    'title' => 'Monthly Sales',
+    'width' => 60,
+    'height' => 15,
+    'showValues' => true,
+    'gridLines' => true,
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                       Monthly Sales
+
+  250 │·               █
+      │          █     █
+      │·         █     █
+      │    █     █  █  █
+      │·   █     █  █  █
+      │    █  █  █  █  █
+  125 │·█  █  █  █  █  █
+      │ █  █  █  █  █  █
+      │·█  █  █  █  █  █
+      │ █  █  █  █  █  █
+      │·█  █  █  █  █  █
+      │ █  █  █  █  █  █
+    0 │·█  █  █  █  █  █
+      └──────────────────
+        Ja Fe Ma Ap Ma Ju
+
+      Jan: 120; Feb: 180; Mar: 150
+      Apr: 220; May: 190; Jun: 250
+```
+
+---
 
 ### Line Chart
 
-```
-                   Temperature Trend (in °F)                   
+Line chart using Braille characters for smooth, high-resolution lines.
 
-    95 │                     ●
-       │                    / \
-       │                   /   \
-       │                  /     \
-       │                 /       \
-       │                /         \
-    70 │               /           \
-       │              /             \
-       │            ●/               \● 
-       │           /                   \
-       │          /                     \
-       │        ●/                       \●
-    45 │ ●─────●                           ●───●
-       └──────────────────────────────────────
-          Ja Fe Ma Ap Ma Ju Ju Au Se Oc No De
+```php
+$chart = ChartFactory::create('line', $data, $options);
+```
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `lineColor` | string | `'cyan'` | Color for the line |
+| `pointColor` | string | `null` | Color for data points (uses lineColor if null) |
+
+**Example:**
+
+```php
+$data = [
+    'Jan' => 120,
+    'Feb' => 180,
+    'Mar' => 150,
+    'Apr' => 220,
+    'May' => 190,
+    'Jun' => 250,
+];
+
+$chart = ChartFactory::create('line', $data, [
+    'title' => 'Sales Trend',
+    'width' => 60,
+    'height' => 15,
+    'lineColor' => 'cyan',
+    'pointColor' => 'red',
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                        Sales Trend
+
+  250 │                                                  ⡠⠛
+      │                                                ⡠⠊
+      │                              ⢀⣄              ⡠⠊
+      │                             ⢠⠊⠉⠑⠢⢄⡀        ⢀⠔⠁
+  207 │                           ⢀⠔⠁     ⠈⠑⠤⣀   ⢀⠔⠁
+      │                          ⡠⠃           ⠉⠲⡶⠁
+      │         ⢀⠾⠦⣀           ⢠⠊
+  163 │       ⢀⠔⠁   ⠉⠒⠤⡀     ⢀⠔⠁
+      │     ⢀⠔⠁        ⠈⠑⠢⢄⣀⡠⠃
+      │    ⡠⠃              ⠙⠁
+      │  ⡠⠊
+  120 │⣤⠊
+      └────────────────────────────────────────────────────
+      Jan      Feb       Mar        Apr       May       Ju
+```
+
+---
+
+### Pie Chart
+
+Circular pie chart rendered using Braille characters with a color legend.
+
+```php
+$chart = ChartFactory::create('pie', $data, $options);
+```
+
+**Example:**
+
+```php
+$data = [
+    'Chrome'  => 65,
+    'Safari'  => 19,
+    'Firefox' => 8,
+    'Edge'    => 5,
+    'Other'   => 3,
+];
+
+$chart = ChartFactory::create('pie', $data, [
+    'title' => 'Browser Market Share',
+    'width' => 60,
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                    Browser Market Share
+
+          ⢀⣀⣠⣤⣤⣤⣤⣤⣀⣀         
+       ⣀⣴⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣶⣄⡀     
+     ⣠⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣦⡀   
+   ⢀⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣄  
+  ⢀⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣆ 
+  ⣸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡀
+  ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+  ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇
+  ⢻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠃
+  ⠘⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡟ 
+   ⠘⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟  
+    ⠈⠻⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡿⠋   
+      ⠈⠛⢿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠟⠋     
+         ⠈⠙⠛⠻⠿⠿⠿⠿⠿⠛⠛⠉        
+
+  ● Chrome   65.0% (65)
+  ● Safari   19.0% (19)
+  ● Firefox   8.0% (8)
+  ● Edge      5.0% (5)
+  ● Other     3.0% (3)
+```
+
+---
+
+### Stacked Bar Chart
+
+Single horizontal bar divided into colored segments with percentages.
+
+```php
+$chart = ChartFactory::create('stacked', $data, $options);
+// Alias: ChartFactory::create('sbar', $data, $options);
+```
+
+**Example:**
+
+```php
+$data = [
+    'Chrome'  => 65,
+    'Safari'  => 19,
+    'Firefox' => 8,
+    'Edge'    => 5,
+    'Other'   => 3,
+];
+
+$chart = ChartFactory::create('stacked', $data, [
+    'title' => 'Browser Market Share',
+    'width' => 60,
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                    Browser Market Share
+
+[█████████████████████████████████████▊███████████████▋██▉█▊]
+ Chrome 65%   Safari 19%   Firefox 8%   Edge 5%   Other 3%
+```
+
+---
+
+### Percentage Bar Chart
+
+Vertical list where each item has a horizontal percentage bar.
+
+```php
+$chart = ChartFactory::create('percent', $data, $options);
+// Alias: ChartFactory::create('pbar', $data, $options);
+```
+
+**Example:**
+
+```php
+$data = [
+    'Chrome'  => 65,
+    'Safari'  => 19,
+    'Firefox' => 8,
+    'Edge'    => 5,
+    'Other'   => 3,
+];
+
+$chart = ChartFactory::create('percent', $data, [
+    'title' => 'Browser Market Share',
+    'width' => 60,
+]);
+
+echo $chart->render();
+```
+
+**Output:**
+
+```
+                    Browser Market Share
+
+Chrome  █████████████████████████████▎                65.0%
+Safari  ████████▌                                     19.0%
+Firefox ███▋                                           8.0%
+Edge    ██▎                                            5.0%
+Other   █▍                                             3.0%
+```
+
+---
+
+## Common Options
+
+All chart types support these base options:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `width` | int | `60` | Total width in characters |
+| `height` | int | `15` | Chart height in lines |
+| `title` | string | `''` | Title displayed above the chart |
+| `colors` | bool | `true` | Enable/disable ANSI colors |
+
+## Available Colors
+
+Charts automatically cycle through these ANSI colors:
+
+- `red`
+- `green`
+- `yellow`
+- `blue`
+- `magenta`
+- `cyan`
+- `white`
+
+Colors are assigned based on a hash of the label, ensuring consistent colors for the same labels across renders.
+
+## API Reference
+
+### ChartFactory
+
+```php
+ChartFactory::create(string $type, array $data, array $options = []): Chart
+```
+
+**Parameters:**
+
+- `$type` - Chart type: `'bar'`, `'vbar'`, `'line'`, `'pie'`, `'stacked'`/`'sbar'`, `'percent'`/`'pbar'`
+- `$data` - Associative array of `label => value` pairs
+- `$options` - Configuration options array
+
+**Returns:** Chart instance
+
+**Throws:** `InvalidArgumentException` for unsupported chart types
+
+### Chart Classes
+
+All chart classes extend the abstract `Chart` class and implement:
+
+```php
+public function render(): string
+```
+
+Returns the complete chart as a string ready to output.
+
+**Direct instantiation:**
+
+```php
+use Daikazu\CliCharts\BarChart;
+use Daikazu\CliCharts\VerticalBarChart;
+use Daikazu\CliCharts\LineChart;
+use Daikazu\CliCharts\PieChart;
+use Daikazu\CliCharts\StackedBarChart;
+use Daikazu\CliCharts\PercentageBarChart;
+
+$chart = new BarChart($data, $options);
+echo $chart->render();
 ```
 
 ## Testing
 
 ```bash
 composer test
+```
+
+Run the visual demo:
+
+```bash
+php demo.php
 ```
 
 ## Changelog

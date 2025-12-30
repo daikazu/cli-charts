@@ -17,8 +17,6 @@ abstract class Chart
 
     protected $colors = true;
 
-    protected array $options = [];
-
     // ANSI color codes
     protected $colorCodes = [
         'reset'   => "\033[0m",
@@ -37,23 +35,21 @@ abstract class Chart
      * @param  array  $data  Data to be displayed
      * @param  array  $options  Optional configuration
      */
-    public function __construct(protected array $data, array $options = [])
+    public function __construct(protected array $data, protected array $options = [])
     {
-        $this->options = $options;
-
-        if (isset($options['width'])) {
-            $this->width = $options['width'];
+        if (isset($this->options['width'])) {
+            $this->width = $this->options['width'];
         }
 
-        if (isset($options['height'])) {
-            $this->height = $options['height'];
+        if (isset($this->options['height'])) {
+            $this->height = $this->options['height'];
         }
 
-        if (isset($options['title'])) {
-            $this->title = $options['title'];
+        if (isset($this->options['title'])) {
+            $this->title = $this->options['title'];
         }
 
-        if (isset($options['colors']) && $options['colors'] === false) {
+        if (isset($this->options['colors']) && $this->options['colors'] === false) {
             $this->colors = false;
         }
     }
