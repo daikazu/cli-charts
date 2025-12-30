@@ -1,5 +1,10 @@
 <?php
 
-use Daikazu\CliCharts\Tests\TestCase;
-
-uses(TestCase::class)->in(__DIR__);
+/*
+|--------------------------------------------------------------------------
+| Test Case
+|--------------------------------------------------------------------------
+|
+| This is a standalone PHP library, no Laravel/Orchestra required.
+|
+*/

@@ -138,7 +138,7 @@ class LineChart extends Chart
 
             // Format the y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │ ';
+                $output .= str_pad((string) (int) round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │ ';
             } else {
                 $output .= '      │ ';
             }

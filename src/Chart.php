@@ -86,7 +86,7 @@ abstract class Chart
             return '';
         }
 
-        $padding = max(0, floor(($this->width - strlen((string) $this->title)) / 2));
+        $padding = (int) max(0, floor(($this->width - strlen((string) $this->title)) / 2));
 
         return str_repeat(' ', $padding) . $this->colorize($this->title, 'cyan') . "\n\n";
     }

@@ -139,7 +139,7 @@ class VerticalBarChart extends Chart
 
             // Format y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │';
+                $output .= str_pad((string) (int) round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │';
             } else {
                 $output .= '      │';
             }
@@ -344,7 +344,7 @@ class VerticalBarChart extends Chart
     private function getMaxLabelLength(): int
     {
         $maxLength = 0;
-        foreach ($this->data as $label => $value) {
+        foreach (array_keys($this->data) as $label) {
             $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;

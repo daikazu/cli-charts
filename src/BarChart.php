@@ -23,7 +23,7 @@ class BarChart extends Chart
         $availableWidth = $this->width - $maxLabelLength - 3;
 
         foreach ($this->data as $label => $value) {
-            $barLength = $maxValue > 0 ? round(($value / $maxValue) * $availableWidth) : 0;
+            $barLength = $maxValue > 0 ? (int) round(($value / $maxValue) * $availableWidth) : 0;
 
             // Format the label with consistent spacing
             $labelOutput = str_pad((string) $label, $maxLabelLength, ' ', STR_PAD_RIGHT);
@@ -50,7 +50,7 @@ class BarChart extends Chart
     private function getMaxLabelLength(): int
     {
         $maxLength = 0;
-        foreach ($this->data as $label => $value) {
+        foreach (array_keys($this->data) as $label) {
             $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;

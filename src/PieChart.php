@@ -43,7 +43,7 @@ class PieChart extends Chart
         arsort($sortedData);
 
         // Calculate the pie chart dimensions
-        $radius = min(10, floor($this->width / 6)); // Adjust radius based on width
+        $radius = (int) min(10, floor($this->width / 6)); // Adjust radius based on width
         $radiusY = $radius;
         $radiusX = $radius * 2;
 
@@ -229,7 +229,7 @@ class PieChart extends Chart
     private function getMaxLabelLength(): int
     {
         $maxLength = 0;
-        foreach ($this->data as $label => $value) {
+        foreach (array_keys($this->data) as $label) {
             $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;
