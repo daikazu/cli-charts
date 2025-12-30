@@ -69,9 +69,10 @@ class PieChart extends Chart
 
         // Calculate dimensions
         // Braille: 2 dots wide x 4 dots tall per character
+        // Terminal chars are ~2:1 (height:width), so we need to compensate
         $charRadius = (int) min(8, floor($this->width / 8));
-        $dotRadius = $charRadius * 2; // Horizontal dot radius
-        $dotRadiusY = $charRadius * 4; // Vertical dot radius (4 dots per char height)
+        $dotRadius = $charRadius * 4; // Horizontal: double width to compensate for char aspect ratio
+        $dotRadiusY = $charRadius * 4; // Vertical dot radius
 
         // Create dot grid (higher resolution than character grid)
         $dotWidth = $dotRadius * 2;
