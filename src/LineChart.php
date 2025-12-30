@@ -5,274 +5,339 @@ declare(strict_types=1);
 namespace Daikazu\CliCharts;
 
 /**
- * Line Chart implementation for CLI
+ * Line Chart implementation using Braille characters for smooth lines
  */
 class LineChart extends Chart
 {
+    private const BRAILLE_BASE = 0x2800;
+
     /**
-     * Render a simple line chart
-     *
-     * @return string The rendered chart
+     * Render a line chart with smooth Braille-based lines
      */
     public function render(): string
     {
         $output = $this->drawTitle();
 
+        if (empty($this->data)) {
+            return $output;
+        }
+
+        $points = array_values($this->data);
+        $labels = array_keys($this->data);
+        $numPoints = count($points);
+
+        if ($numPoints < 2) {
+            return $output . "Need at least 2 data points for a line chart.\n";
+        }
+
+        // Get color options
+        $lineColor = $this->options['lineColor'] ?? 'cyan';
+        $pointColor = $this->options['pointColor'] ?? null;
+
         $maxValue = $this->getMaxValue();
         $minValue = $this->getMinValue();
         $valueRange = $maxValue - $minValue;
 
-        $points = array_values($this->data);
-        $labels = array_keys($this->data);
+        // Chart dimensions
+        // Leave room for Y-axis labels (6 chars) and some padding
+        $yAxisWidth = 6;
+        $chartWidth = $this->width - $yAxisWidth - 2;
+        $chartHeight = $this->height - 3; // Leave room for X-axis labels
 
-        // Calculate required width based on labels
-        $requiredWidth = $this->calculateRequiredWidth($labels);
-        $this->width = max($this->width, $requiredWidth);
+        // Braille resolution: 2 dots per char width, 4 dots per char height
+        $dotWidth = $chartWidth * 2;
+        $dotHeight = $chartHeight * 4;
 
-        // Calculate the actual height (excluding axes and labels)
-        $chartHeight = $this->height - 1;
-
-        // Create a 2D grid for the chart (filled with spaces)
+        // Create dot grid
         $grid = [];
-        for ($y = 0; $y < $chartHeight; $y++) {
-            $grid[$y] = array_fill(0, count($points) * 4, ' '); // Use 4 spaces between points
+        for ($y = 0; $y < $dotHeight; $y++) {
+            $grid[$y] = array_fill(0, $dotWidth, false);
         }
 
-        // Calculate positions for each data point
-        $positions = [];
-        $counter = count($points);
-        for ($i = 0; $i < $counter; $i++) {
-            $value = $points[$i];
-            // Scale the value to fit in the chart height
-            // If minValue == maxValue, place the point in the middle
+        // Track which character cells contain data points (for coloring)
+        $pointCells = [];
+
+        // Calculate point positions in dot coordinates
+        $pointPositions = [];
+        for ($i = 0; $i < $numPoints; $i++) {
+            // X position: spread points evenly across width
+            $x = (int) round(($i / ($numPoints - 1)) * ($dotWidth - 1));
+
+            // Y position: scale value to height (inverted because Y grows downward)
             if ($valueRange == 0) {
-                $y = floor($chartHeight / 2);
+                $y = (int) ($dotHeight / 2);
             } else {
-                $y = $chartHeight - 1 - floor(($value - $minValue) / $valueRange * ($chartHeight - 1));
+                $normalizedValue = ($points[$i] - $minValue) / $valueRange;
+                $y = (int) round(($dotHeight - 1) * (1 - $normalizedValue));
             }
-            $y = max(0, min($chartHeight - 1, $y)); // Ensure y is within bounds
-            $positions[$i] = $y;
-            $grid[$y][$i * 4] = '●'; // Position points with proper spacing
+
+            $pointPositions[] = ['x' => $x, 'y' => $y, 'value' => $points[$i]];
+
+            // Track the character cell this point falls into
+            $charX = (int) floor($x / 2);
+            $charY = (int) floor($y / 4);
+            $pointCells["{$charX},{$charY}"] = true;
         }
-        $counter = count($positions);
 
-        // Add connecting lines between points - with improved, cleaner connections
-        for ($i = 1; $i < $counter; $i++) {
-            $prev_y = $positions[$i - 1];
-            $curr_y = $positions[$i];
-            $prev_x = ($i - 1) * 4;
-            $curr_x = $i * 4;
+        // Draw lines between consecutive points using Bresenham's algorithm
+        for ($i = 0; $i < $numPoints - 1; $i++) {
+            $this->drawLine(
+                $grid,
+                $pointPositions[$i]['x'],
+                $pointPositions[$i]['y'],
+                $pointPositions[$i + 1]['x'],
+                $pointPositions[$i + 1]['y']
+            );
+        }
 
-            if ($prev_y == $curr_y) {
-                // Simple horizontal line between points on the same level
-                for ($x = $prev_x + 1; $x < $curr_x; $x++) {
-                    $grid[$prev_y][$x] = '─';
-                }
-            } else {
-                // Determine direction (going up or down)
-                $step = ($curr_y > $prev_y) ? 1 : -1;
-
-                // Cleaner approach: Draw horizontal line from previous point
-                // then add a corner, then vertical line, then connect to next point
-
-                // Draw horizontal segment from previous point
-                $middleX = $prev_x + 2; // Stop horizontal line 2 characters after the previous point
-                for ($x = $prev_x + 1; $x < $middleX; $x++) {
-                    $grid[$prev_y][$x] = '─';
-                }
-
-                // Place corner at the bend point
-                //                $grid[$prev_y][$middleX] = ($step === 1) ? '╯' : '╮';
-                $grid[$prev_y][$middleX] = ($step === 1) ? '╮' : '╯';
-
-                // Draw vertical line after the corner
-                for ($y = $prev_y + $step; $y != $curr_y; $y += $step) {
-                    $grid[$y][$middleX] = '│';
-                }
-
-                // Place the corner at the bottom/top of the line
-                $grid[$curr_y][$middleX] = ($step === 1) ? '╰' : '╭';
-
-                // Draw horizontal line to the current point
-                for ($x = $middleX + 1; $x < $curr_x; $x++) {
-                    $grid[$curr_y][$x] = '─';
-                }
+        // Mark the actual data points (make them more visible)
+        foreach ($pointPositions as $pos) {
+            // Draw a small cross or dot at each point
+            $grid[$pos['y']][$pos['x']] = true;
+            if ($pos['y'] > 0) {
+                $grid[$pos['y'] - 1][$pos['x']] = true;
+            }
+            if ($pos['y'] < $dotHeight - 1) {
+                $grid[$pos['y'] + 1][$pos['x']] = true;
+            }
+            if ($pos['x'] > 0) {
+                $grid[$pos['y']][$pos['x'] - 1] = true;
+            }
+            if ($pos['x'] < $dotWidth - 1) {
+                $grid[$pos['y']][$pos['x'] + 1] = true;
             }
         }
 
-        // Draw y-axis with labels
-        $yLabelValues = [];
-        if ($valueRange > 0) {
-            // Calculate good value points for y-axis (top, middle, bottom)
-            $yLabelValues[] = $maxValue;
-            $yLabelValues[] = $minValue + $valueRange / 2;
-            $yLabelValues[] = $minValue;
-        } else {
-            // If all values are the same
-            $yLabelValues[] = $maxValue;
-        }
+        // Calculate Y-axis labels
+        $yLabels = $this->calculateYLabels($minValue, $maxValue, $chartHeight);
 
-        // Render the chart grid with axes
-        for ($y = 0; $y < $chartHeight; $y++) {
-            $row = $grid[$y];
-
-            // Determine if we need to show a y-axis label at this position
-            $yAxisLabel = '';
-            $labelY = round(($chartHeight - 1 - $y) / ($chartHeight - 1) * $valueRange + $minValue);
-
-            // Check if this y position should show a label
-            $showLabel = false;
-            foreach ($yLabelValues as $idx => $labelValue) {
-                $labelPosition = $valueRange > 0
-                    ? $chartHeight - 1 - round(($labelValue - $minValue) / $valueRange * ($chartHeight - 1))
-                    : floor($chartHeight / 2);
-
-                if ($y == $labelPosition ||
-                    ($y === 0 && $idx === 0) ||
-                    ($y == $chartHeight - 1 && $idx === count($yLabelValues) - 1)) {
-                    $yAxisLabel = $labelValue;
-                    $showLabel = true;
-                    break;
-                }
-            }
-
-            // Format the y-axis label
-            if ($showLabel) {
-                $output .= str_pad((string) (int) round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │ ';
+        // Render the grid as Braille characters
+        for ($charY = 0; $charY < $chartHeight; $charY++) {
+            // Y-axis label
+            $yValue = $this->getYLabelForRow($charY, $chartHeight, $minValue, $maxValue, $yLabels);
+            if ($yValue !== null) {
+                $output .= str_pad((string) $yValue, $yAxisWidth - 1, ' ', STR_PAD_LEFT) . ' │';
             } else {
-                $output .= '      │ ';
+                $output .= str_repeat(' ', $yAxisWidth - 1) . ' │';
             }
-            $counter = count($row);
 
-            // Draw the row with points and lines
-            for ($x = 0; $x < $counter; $x++) {
-                // Display the cell content with appropriate color
-                if ($row[$x] === '●') {
-                    $output .= $this->colorize($row[$x], 'red');
-                } elseif (in_array($row[$x], ['╭', '╮', '╯', '╰', '│', '─'])) {
-                    $output .= $this->colorize($row[$x], 'blue');
+            // Chart content
+            for ($charX = 0; $charX < $chartWidth; $charX++) {
+                $brailleChar = $this->getBrailleChar($grid, $charX, $charY);
+                if ($brailleChar === ' ') {
+                    $output .= ' ';
                 } else {
-                    $output .= $row[$x];
+                    // Use point color if this cell contains a data point
+                    $isPointCell = isset($pointCells["{$charX},{$charY}"]);
+                    $color = ($isPointCell && $pointColor !== null) ? $pointColor : $lineColor;
+                    $output .= $this->colorize($brailleChar, $color);
                 }
             }
             $output .= "\n";
         }
 
-        // Draw the x-axis line with improved characters
-        $output .= '      └' . str_repeat('─', count($points) * 4) . "\n";
+        // X-axis line
+        $output .= str_repeat(' ', $yAxisWidth - 1) . ' └' . str_repeat('─', $chartWidth) . "\n";
 
-        // Draw x-axis labels
-        $output .= '       ';
+        // X-axis labels
+        $output .= $this->drawXAxisLabels($labels, $chartWidth, $yAxisWidth);
 
-        // First pass: check if labels follow a pattern like "Category A", "Category B"
-        $hasPattern = false;
-        $commonPrefix = null;
+        return $output;
+    }
 
-        // Check if we have labels with a consistent pattern (first word + identifier)
-        if (count($labels) > 1) {
-            $firstWords = [];
-            foreach ($labels as $label) {
-                $parts = explode(' ', (string) $label);
-                if (count($parts) > 1) {
-                    $firstWords[] = $parts[0];
-                }
+    /**
+     * Draw a line between two points using Bresenham's algorithm
+     */
+    private function drawLine(array &$grid, int $x0, int $y0, int $x1, int $y1): void
+    {
+        $dx = abs($x1 - $x0);
+        $dy = abs($y1 - $y0);
+        $sx = $x0 < $x1 ? 1 : -1;
+        $sy = $y0 < $y1 ? 1 : -1;
+        $err = $dx - $dy;
+
+        $maxY = count($grid) - 1;
+        $maxX = count($grid[0]) - 1;
+
+        while (true) {
+            if ($y0 >= 0 && $y0 <= $maxY && $x0 >= 0 && $x0 <= $maxX) {
+                $grid[$y0][$x0] = true;
             }
 
-            if (count($firstWords) > 0) {
-                $uniqueFirstWords = array_unique($firstWords);
-                if (count($uniqueFirstWords) === 1) {
-                    $hasPattern = true;
-                    $commonPrefix = reset($uniqueFirstWords);
-                }
+            if ($x0 === $x1 && $y0 === $y1) {
+                break;
+            }
+
+            $e2 = 2 * $err;
+            if ($e2 > -$dy) {
+                $err -= $dy;
+                $x0 += $sx;
+            }
+            if ($e2 < $dx) {
+                $err += $dx;
+                $y0 += $sy;
             }
         }
-        $counter = count($labels);
+    }
 
-        for ($i = 0; $i < $counter; $i++) {
-            $label = $labels[$i];
+    /**
+     * Convert a 2x4 cell of the dot grid to a Braille character
+     */
+    private function getBrailleChar(array $grid, int $charX, int $charY): string
+    {
+        $dotX = $charX * 2;
+        $dotY = $charY * 4;
 
-            // Create a smart abbreviation for the label
-            if ($hasPattern && str_starts_with((string) $label, (string) $commonPrefix)) {
-                // For labels like "Category A", just use "A"
-                $parts = explode(' ', (string) $label);
-                $labelText = count($parts) > 1 ? $parts[1] : substr((string) $label, 0, 2);
-            } elseif (str_contains((string) $label, ' ')) {
-                // For other multi-word labels
-                $parts = explode(' ', (string) $label);
-                $labelText = '';
-                foreach ($parts as $part) {
-                    $labelText .= substr($part, 0, 1);
-                }
+        $bits = 0;
+
+        // Braille dot pattern:
+        // 0 3
+        // 1 4
+        // 2 5
+        // 6 7
+        $dotMap = [
+            [0, 0, 0x01], [1, 0, 0x02], [2, 0, 0x04], [3, 0, 0x40],
+            [0, 1, 0x08], [1, 1, 0x10], [2, 1, 0x20], [3, 1, 0x80],
+        ];
+
+        foreach ($dotMap as [$row, $col, $bit]) {
+            $y = $dotY + $row;
+            $x = $dotX + $col;
+
+            if (isset($grid[$y][$x]) && $grid[$y][$x]) {
+                $bits |= $bit;
+            }
+        }
+
+        if ($bits === 0) {
+            return ' ';
+        }
+
+        return mb_chr(self::BRAILLE_BASE | $bits);
+    }
+
+    /**
+     * Calculate Y-axis labels
+     *
+     * @return array<int, int|float>
+     */
+    private function calculateYLabels(float $min, float $max, int $height): array
+    {
+        $labels = [];
+
+        if ($max == $min) {
+            return [(int) round($max)];
+        }
+
+        // Show 3-5 labels depending on height
+        $numLabels = min(5, max(3, (int) floor($height / 3)));
+
+        for ($i = 0; $i < $numLabels; $i++) {
+            $value = $max - ($i / ($numLabels - 1)) * ($max - $min);
+            $labels[] = (int) round($value);
+        }
+
+        return $labels;
+    }
+
+    /**
+     * Get the Y label for a specific row, if any
+     */
+    private function getYLabelForRow(int $row, int $totalRows, float $min, float $max, array $yLabels): ?int
+    {
+        $numLabels = count($yLabels);
+        if ($numLabels === 0) {
+            return null;
+        }
+
+        // Calculate which label positions map to which rows
+        for ($i = 0; $i < $numLabels; $i++) {
+            if ($numLabels === 1) {
+                $labelRow = (int) ($totalRows / 2);
             } else {
-                // Regular labels: first 2 chars
-                $labelText = substr((string) $label, 0, 2);
+                $labelRow = (int) round($i / ($numLabels - 1) * ($totalRows - 1));
             }
-
-            // Calculate position for this label
-            // 7 chars for left margin + position of the point (i * 4)
-            $targetPosition = 7 + ($i * 4);
-            $currentPosition = strlen($output);
-
-            // Add spaces to reach the target position
-            if ($targetPosition > $currentPosition) {
-                $output .= str_repeat(' ', $targetPosition - $currentPosition);
-            }
-
-            // Add the label with proper spacing
-            $output .= $labelText;
-
-            // Add extra space after the label if it's not the last one
-            if ($i < count($labels) - 1) {
-                $output .= '  ';
+            if ($labelRow === $row) {
+                return $yLabels[$i];
             }
         }
 
-        return $output . "\n";
+        return null;
+    }
+
+    /**
+     * Draw X-axis labels
+     */
+    private function drawXAxisLabels(array $labels, int $chartWidth, int $yAxisWidth): string
+    {
+        $output = str_repeat(' ', $yAxisWidth);
+        $numLabels = count($labels);
+
+        // Calculate positions for each label
+        $positions = [];
+        for ($i = 0; $i < $numLabels; $i++) {
+            $positions[$i] = (int) round(($i / ($numLabels - 1)) * ($chartWidth - 1));
+        }
+
+        // Build label string
+        $labelLine = str_repeat(' ', $chartWidth);
+        foreach ($labels as $i => $label) {
+            $abbrev = $this->abbreviateLabel((string) $label);
+            $pos = $positions[$i];
+
+            // Center the label around its position
+            $startPos = max(0, $pos - (int) floor(strlen($abbrev) / 2));
+
+            // Place label characters
+            for ($j = 0; $j < strlen($abbrev) && $startPos + $j < $chartWidth; $j++) {
+                $labelLine[$startPos + $j] = $abbrev[$j];
+            }
+        }
+
+        return $output . $labelLine . "\n";
+    }
+
+    /**
+     * Abbreviate a label for X-axis display
+     */
+    private function abbreviateLabel(string $label): string
+    {
+        if (strlen($label) <= 3) {
+            return $label;
+        }
+
+        // For multi-word labels, use initials
+        if (str_contains($label, ' ')) {
+            $words = explode(' ', $label);
+            $abbrev = '';
+            foreach ($words as $word) {
+                $abbrev .= mb_substr($word, 0, 1);
+            }
+
+            return $abbrev;
+        }
+
+        // Single word: first 3 chars
+        return substr($label, 0, 3);
     }
 
     /**
      * Find the minimum value in the data set
-     *
-     * @return float Minimum value
      */
-    protected function getMinValue()
+    protected function getMinValue(): float
     {
         $min = PHP_FLOAT_MAX;
         foreach ($this->data as $value) {
             if (is_numeric($value) && $value < $min) {
-                $min = $value;
+                $min = (float) $value;
             }
         }
-        // If there's a large gap between min and 0, keep the min.
-        // Otherwise, start from 0 for better visual scaling.
+
+        // Start from 0 if min is positive and not too far from 0
         if ($min > 0 && $min < 0.3 * $this->getMaxValue()) {
             return 0;
         }
 
         return $min;
-    }
-
-    /**
-     * Calculate the required width based on label lengths
-     *
-     * @param  array  $labels  Array of labels
-     * @return int Required width in characters
-     */
-    private function calculateRequiredWidth(array $labels)
-    {
-        $totalPoints = count($labels);
-        if ($totalPoints === 0) {
-            return $this->width;
-        }
-
-        // Calculate minimum spacing needed between points
-        $minSpacing = 4; // Minimum characters between points
-        $leftMargin = 7; // Space for y-axis labels
-        $rightMargin = 2; // Space for right edge
-
-        // Calculate total width needed
-        $totalWidth = $leftMargin + ($totalPoints - 1) * $minSpacing + $rightMargin;
-
-        return $totalWidth;
     }
 }

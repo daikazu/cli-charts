@@ -17,6 +17,8 @@ abstract class Chart
 
     protected $colors = true;
 
+    protected array $options = [];
+
     // ANSI color codes
     protected $colorCodes = [
         'reset'   => "\033[0m",
@@ -37,6 +39,8 @@ abstract class Chart
      */
     public function __construct(protected array $data, array $options = [])
     {
+        $this->options = $options;
+
         if (isset($options['width'])) {
             $this->width = $options['width'];
         }

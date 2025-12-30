@@ -9,9 +9,10 @@ test('renders line chart with data', function () {
 
     $output = $chart->render();
 
-    expect($output)->toContain('●')
-        ->toContain('│')
-        ->toContain('─');
+    // Uses Braille characters for smooth lines
+    expect($output)->toContain('│')
+        ->toContain('─')
+        ->toContain('Jan');
 });
 
 test('renders line chart with title', function () {
@@ -32,7 +33,9 @@ test('handles flat data (all same values)', function () {
 
     $output = $chart->render();
 
-    expect($output)->toContain('●');
+    // Flat data should render a horizontal line
+    expect($output)->toContain('│')
+        ->toContain('─');
 });
 
 test('handles ascending data', function () {
@@ -53,4 +56,25 @@ test('handles descending data', function () {
     $output = $chart->render();
 
     expect($output)->toBeString();
+});
+
+test('supports custom line and point colors', function () {
+    $chart = new LineChart(['A' => 10, 'B' => 20, 'C' => 15], [
+        'lineColor'  => 'cyan',
+        'pointColor' => 'yellow',
+    ]);
+
+    $output = $chart->render();
+
+    // Should contain both cyan (line) and yellow (points) ANSI codes
+    expect($output)->toContain("\033[36m") // cyan
+        ->toContain("\033[33m"); // yellow
+});
+
+test('uses default cyan color when no colors specified', function () {
+    $chart = new LineChart(['A' => 10, 'B' => 20], []);
+
+    $output = $chart->render();
+
+    expect($output)->toContain("\033[36m"); // cyan is default
 });

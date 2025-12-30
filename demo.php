@@ -58,7 +58,7 @@ function demoChart(string $type, string $title, array $data, array $options = []
 // Run demos
 demoChart('bar', 'Monthly Expenses ($)', $categoryData);
 demoChart('vbar', 'Monthly Sales', $salesData, ['showValues' => true, 'gridLines' => true]);
-demoChart('line', 'Sales Trend', $salesData);
+demoChart('line', 'Sales Trend', $salesData, ['lineColor' => 'cyan', 'pointColor' => 'red']);
 demoChart('pie', 'Browser Market Share', $marketShare);
 demoChart('stacked', 'Browser Market Share', $marketShare);
 demoChart('percent', 'Browser Market Share', $marketShare);

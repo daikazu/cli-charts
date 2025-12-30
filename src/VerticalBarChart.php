@@ -10,9 +10,9 @@ namespace Daikazu\CliCharts;
 class VerticalBarChart extends Chart
 {
     /**
-     * Additional options specific to vertical bar charts
+     * Default options specific to vertical bar charts
      */
-    protected $options = [
+    private static array $defaultOptions = [
         'showValues' => false,  // Show values on top of bars
         'gridLines'  => true,    // Show horizontal grid lines
         'barWidth'   => 1,         // Width of each bar in characters
@@ -26,20 +26,9 @@ class VerticalBarChart extends Chart
      */
     public function __construct(array $data, array $options = [])
     {
+        // Merge defaults with provided options
+        $options = array_merge(self::$defaultOptions, $options);
         parent::__construct($data, $options);
-
-        // Merge chart-specific options
-        if (isset($options['showValues'])) {
-            $this->options['showValues'] = (bool) $options['showValues'];
-        }
-
-        if (isset($options['gridLines'])) {
-            $this->options['gridLines'] = (bool) $options['gridLines'];
-        }
-
-        if (isset($options['barWidth']) && is_int($options['barWidth']) && $options['barWidth'] > 0) {
-            $this->options['barWidth'] = $options['barWidth'];
-        }
     }
 
     /**
