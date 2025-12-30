@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\CliCharts;
 
 /**
@@ -17,14 +19,14 @@ class PieChart extends Chart
      *
      * @return string The rendered chart
      */
-    public function render()
+    public function render(): string
     {
         $output = $this->drawTitle();
 
         // Calculate total and percentages
         $total = array_sum($this->data);
         if ($total <= 0) {
-            return $output."Error: Total value must be greater than zero.\n";
+            return $output . "Error: Total value must be greater than zero.\n";
         }
 
         // Store a copy of the original data for consistent display
@@ -57,13 +59,10 @@ class PieChart extends Chart
 
         // Render the canvas
         for ($y = 0; $y < $diameter; $y++) {
-            $output .= str_repeat(' ', $radius).implode('', $canvas[$y])."\n";
+            $output .= str_repeat(' ', $radius) . implode('', $canvas[$y]) . "\n";
         }
 
         $output .= "\n";
-
-        // Calculate legend placement
-        $legendWidth = $this->width - $radiusX * 2 - 2;
 
         // Draw the legend with percentages
         $legendLines = [];
@@ -87,9 +86,10 @@ class PieChart extends Chart
 
             // Format: ■ Label: 42.5% (123)
             $formattedValue = number_format($value, 0, '.', ',');
-            $legendItem = sprintf('%s %s: %.1f%% (%s)',
+            $legendItem = sprintf(
+                '%s %s: %.1f%% (%s)',
                 $marker,
-                str_pad(substr($label, 0, min($maxLabelLength, 12)), min($maxLabelLength, 12), ' '),
+                str_pad(substr((string) $label, 0, min($maxLabelLength, 12)), min($maxLabelLength, 12), ' '),
                 $percentage,
                 $formattedValue
             );
@@ -102,12 +102,12 @@ class PieChart extends Chart
         $maxLegendItems = floor($this->height / 2); // Limit legend items based on height
 
         for ($i = 0; $i < min(count($legendLines), $maxLegendItems); $i++) {
-            $output .= str_repeat(' ', $radius).$legendLines[$i]."\n";
+            $output .= str_repeat(' ', $radius) . $legendLines[$i] . "\n";
         }
 
         // If there are more items than can fit, add a note
         if (count($legendLines) > $maxLegendItems) {
-            $output .= str_repeat(' ', $radius).'(+'.(count($legendLines) - $maxLegendItems)." more items)\n";
+            $output .= str_repeat(' ', $radius) . '(+' . (count($legendLines) - $maxLegendItems) . " more items)\n";
         }
 
         return $output;
@@ -121,7 +121,7 @@ class PieChart extends Chart
      * @param  int  $radiusY  The vertical radius of the pie
      * @param  array  $percentages  The data percentages
      */
-    protected function drawPieOnCanvas(&$canvas, $radiusX, $radiusY, $percentages)
+    protected function drawPieOnCanvas(array &$canvas, $radiusX, $radiusY, array $percentages)
     {
         $centerX = $radiusX;
         $centerY = $radiusY;
@@ -149,7 +149,7 @@ class PieChart extends Chart
             }
         }
 
-        if ($totalPiePixels == 0) {
+        if ($totalPiePixels === 0) {
             return; // No pixels to draw
         }
 
@@ -174,7 +174,7 @@ class PieChart extends Chart
             }
 
             // Last segment gets remaining pixels to ensure total is exact
-            if ($index == count($segmentLabels) - 1) {
+            if ($index === count($segmentLabels) - 1) {
                 $pixelCount = $totalPiePixels - $pixelsAssigned;
             }
 
@@ -195,7 +195,7 @@ class PieChart extends Chart
         }
 
         // Sort pixels by angle to distribute segments properly
-        usort($piePixelCoordinates, function ($a, $b) use ($centerX, $centerY) {
+        usort($piePixelCoordinates, function (array $a, array $b) use ($centerX, $centerY): int {
             // Calculate angles for both pixels (in radians)
             $angleA = atan2($a[1] - $centerY, $a[0] - $centerX);
             $angleB = atan2($b[1] - $centerY, $b[0] - $centerX);
@@ -226,11 +226,11 @@ class PieChart extends Chart
      *
      * @return int Maximum label length
      */
-    private function getMaxLabelLength()
+    private function getMaxLabelLength(): int
     {
         $maxLength = 0;
         foreach ($this->data as $label => $value) {
-            $length = strlen($label);
+            $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;
             }

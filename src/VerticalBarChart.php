@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\CliCharts;
 
 /**
@@ -12,8 +14,8 @@ class VerticalBarChart extends Chart
      */
     protected $options = [
         'showValues' => false,  // Show values on top of bars
-        'gridLines' => true,    // Show horizontal grid lines
-        'barWidth' => 1,         // Width of each bar in characters
+        'gridLines'  => true,    // Show horizontal grid lines
+        'barWidth'   => 1,         // Width of each bar in characters
     ];
 
     /**
@@ -45,7 +47,7 @@ class VerticalBarChart extends Chart
      *
      * @return string The rendered chart
      */
-    public function render()
+    public function render(): string
     {
         $output = $this->drawTitle();
 
@@ -127,8 +129,8 @@ class VerticalBarChart extends Chart
                     : floor($chartHeight / 2);
 
                 if ($y == $labelPosition ||
-                    ($y == 0 && $idx == 0) ||
-                    ($y == $chartHeight - 1 && $idx == count($yLabelValues) - 1)) {
+                    ($y === 0 && $idx === 0) ||
+                    ($y == $chartHeight - 1 && $idx === count($yLabelValues) - 1)) {
                     $yAxisLabel = $labelValue;
                     $showLabel = true;
                     break;
@@ -137,7 +139,7 @@ class VerticalBarChart extends Chart
 
             // Format y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT).' │';
+                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │';
             } else {
                 $output .= '      │';
             }
@@ -155,7 +157,7 @@ class VerticalBarChart extends Chart
 
                 // Colorize the bar (cycle through colors for different bars)
                 $colorKeys = array_keys($this->colorCodes);
-                $colorIndex = crc32($labels[$i]) % (count($colorKeys) - 1); // -1 to skip 'reset'
+                $colorIndex = crc32((string) $labels[$i]) % (count($colorKeys) - 1); // -1 to skip 'reset'
                 $color = $colorKeys[$colorIndex + 1]; // +1 to skip 'reset'
 
                 if (isset($row[$barPosition]) && $row[$barPosition] === '█') {
@@ -178,7 +180,7 @@ class VerticalBarChart extends Chart
                         $output .= str_repeat(' ', $barSpacing - 1);
                     }
                 } else {
-                    $output .= ' '.str_repeat(' ', $barSpacing - 1);
+                    $output .= ' ' . str_repeat(' ', $barSpacing - 1);
                 }
             }
 
@@ -186,7 +188,7 @@ class VerticalBarChart extends Chart
         }
 
         // Draw the x-axis with the correct length
-        $output .= '      └'.str_repeat('─', $totalBars * $barSpacing)."\n";
+        $output .= '      └' . str_repeat('─', $totalBars * $barSpacing) . "\n";
 
         // Draw labels below x-axis, aligned under each bar
         $labelRow = '';
@@ -221,7 +223,7 @@ class VerticalBarChart extends Chart
             $labelRow .= $displayLabel;
         }
 
-        $output .= $labelRow."\n";
+        $output .= $labelRow . "\n";
 
         // Add a legend with values
         $output .= "\n";
@@ -232,12 +234,12 @@ class VerticalBarChart extends Chart
 
             // Colorize the label
             $colorKeys = array_keys($this->colorCodes);
-            $colorIndex = crc32($label) % (count($colorKeys) - 1);
+            $colorIndex = crc32((string) $label) % (count($colorKeys) - 1);
             $color = $colorKeys[$colorIndex + 1];
 
             // Format: Label: Value (with abbreviated label)
             $abbreviatedLabel = $this->abbreviateLabel($label);
-            $valueLabels[] = $this->colorize($abbreviatedLabel, $color).': '.$value;
+            $valueLabels[] = $this->colorize($abbreviatedLabel, $color) . ': ' . $value;
         }
 
         // Display the legend in multiple columns if needed
@@ -248,18 +250,18 @@ class VerticalBarChart extends Chart
             $itemWithoutColors = preg_replace('/\033\[\d+m/', '', $item);
 
             // Check if adding this item would exceed the width
-            if (strlen($currentLine) + strlen($itemWithoutColors) + 2 > $legendWidth && ! empty($currentLine)) {
-                $output .= '      '.$currentLine."\n";
+            if (strlen($currentLine) + strlen((string) $itemWithoutColors) + 2 > $legendWidth && ($currentLine !== '' && $currentLine !== '0')) {
+                $output .= '      ' . $currentLine . "\n";
                 $currentLine = $item;
             } else {
                 // Use semicolon as separator instead of comma to avoid confusion with multi-word labels
-                $separator = ($index > 0 && ! empty($currentLine)) ? '; ' : '';
-                $currentLine .= $separator.$item;
+                $separator = ($index > 0 && ($currentLine !== '' && $currentLine !== '0')) ? '; ' : '';
+                $currentLine .= $separator . $item;
             }
         }
 
-        if (! empty($currentLine)) {
-            $output .= '      '.$currentLine."\n";
+        if ($currentLine !== '' && $currentLine !== '0') {
+            $output .= '      ' . $currentLine . "\n";
         }
 
         return $output;
@@ -274,7 +276,7 @@ class VerticalBarChart extends Chart
     protected function abbreviateLabel($label)
     {
         // If it's a single word or already short, return as is
-        if (strpos($label, ' ') === false || strlen($label) <= 6) {
+        if (! str_contains($label, ' ') || strlen($label) <= 6) {
             return $label;
         }
 
@@ -282,17 +284,16 @@ class VerticalBarChart extends Chart
 
         // Special case: If the label follows a pattern like "Something X" where X is a single character
         // or digit, keep the format but abbreviate the first word if needed
-        if (count($words) == 2 && strlen($words[1]) <= 2) {
+        if (count($words) === 2 && strlen($words[1]) <= 2) {
             $firstWord = $words[0];
             // If the first word is long, abbreviate it to 1-3 chars
             if (strlen($firstWord) > 3) {
                 $abbreviation = substr($firstWord, 0, 1);
 
-                return $abbreviation.' '.$words[1];
-            } else {
-                // First word is already short
-                return $label;
+                return $abbreviation . ' ' . $words[1];
             }
+            // First word is already short
+            return $label;
         }
 
         $result = '';
@@ -305,11 +306,11 @@ class VerticalBarChart extends Chart
             }
             // Last word: keep it intact to maintain uniqueness
             elseif ($index === count($words) - 1) {
-                $result .= ' '.$word;
+                $result .= ' ' . $word;
             }
             // Middle words: use first letter only
             else {
-                $result .= ' '.substr($word, 0, 1);
+                $result .= ' ' . substr($word, 0, 1);
             }
         }
 
@@ -324,7 +325,7 @@ class VerticalBarChart extends Chart
     protected function getMinValue()
     {
         $min = PHP_FLOAT_MAX;
-        foreach ($this->data as $key => $value) {
+        foreach ($this->data as $value) {
             if (is_numeric($value) && $value < $min) {
                 $min = $value;
             }
@@ -340,148 +341,16 @@ class VerticalBarChart extends Chart
      *
      * @return int Maximum label length
      */
-    private function getMaxLabelLength()
+    private function getMaxLabelLength(): int
     {
         $maxLength = 0;
         foreach ($this->data as $label => $value) {
-            $length = strlen($label);
+            $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;
             }
         }
 
         return $maxLength;
-    }
-
-    /**
-     * Create a concise x-axis label that preserves uniqueness
-     *
-     * @param  string  $label  The original label
-     * @return string The shortened label
-     */
-    private function createXAxisLabel($label)
-    {
-        // If it's already short or doesn't contain spaces, return as is
-        if (strlen($label) <= 3 || strpos($label, ' ') === false) {
-            return $label;
-        }
-
-        $words = explode(' ', $label);
-
-        // For labels like "Category A", "Team B", etc.
-        if (count($words) == 2 && strlen($words[1]) <= 2) {
-            // Use first letter of first word + second word
-            return substr($words[0], 0, 1).' '.$words[1];
-        }
-
-        // For other multi-word labels
-        if (count($words) >= 2) {
-            $result = '';
-            foreach ($words as $i => $word) {
-                // Add first letter of each word
-                $result .= substr($word, 0, 1);
-                if ($i < count($words) - 1) {
-                    $result .= ' ';
-                }
-            }
-
-            return $result;
-        }
-
-        // Fallback: just use first 2-3 chars
-        return substr($label, 0, min(3, strlen($label)));
-    }
-
-    /**
-     * Detect if labels share a common prefix pattern
-     *
-     * @param  array  $labels  Array of label strings
-     * @return string|null Common prefix if found, null otherwise
-     */
-    private function detectCommonPrefix(array $labels)
-    {
-        if (count($labels) <= 1) {
-            return null;
-        }
-
-        // Extract first words from all labels
-        $firstWords = [];
-        foreach ($labels as $label) {
-            $parts = explode(' ', $label);
-            if (count($parts) > 1) {
-                $firstWords[] = $parts[0];
-            }
-        }
-
-        // Count occurrences of each first word
-        $counts = array_count_values($firstWords);
-
-        // Find most common first word that appears in multiple labels
-        $mostCommon = null;
-        $highestCount = 1;
-
-        foreach ($counts as $word => $count) {
-            if ($count > $highestCount) {
-                $mostCommon = $word;
-                $highestCount = $count;
-            }
-        }
-
-        // Only return if the word appears in multiple labels (>50% of labels)
-        if ($highestCount > count($labels) / 2) {
-            return $mostCommon;
-        }
-
-        return null;
-    }
-
-    /**
-     * Get a display label with appropriate abbreviation based on context
-     *
-     * @param  string  $label  Original label
-     * @param  string|null  $commonPrefix  Common prefix detected across labels
-     * @return string Formatted display label
-     */
-    private function getDisplayLabel($label, $commonPrefix = null)
-    {
-        // If we have a common prefix pattern (like "Category A", "Category B")
-        if ($commonPrefix !== null && strpos($label, $commonPrefix.' ') === 0) {
-            $parts = explode(' ', $label);
-
-            // If it's a two-part label like "Category A"
-            if (count($parts) == 2) {
-                // Just return the first letter of the prefix + the suffix
-                return substr($commonPrefix, 0, 1).' '.$parts[1];
-            }
-
-            // For more complex labels starting with the common prefix
-            $suffix = substr($label, strlen($commonPrefix) + 1);
-
-            return substr($commonPrefix, 0, 1).' '.$suffix;
-        }
-
-        // If it's a multi-word label but doesn't match the common pattern
-        if (strpos($label, ' ') !== false) {
-            $words = explode(' ', $label);
-            $result = '';
-
-            foreach ($words as $index => $word) {
-                if ($index === 0) {
-                    // First word: first letter or two
-                    $result .= substr($word, 0, min(2, strlen($word)));
-                } elseif ($index === count($words) - 1) {
-                    // Last word: keep fully
-                    $result .= ' '.$word;
-                } else {
-                    // Middle words: first letter
-                    $result .= ' '.substr($word, 0, 1);
-                }
-            }
-
-            return $result;
-        }
-
-        // Simple single-word label, just return as is
-        return $label;
     }
 }

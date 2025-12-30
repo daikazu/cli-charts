@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\CliCharts;
 
 /**
@@ -24,17 +26,17 @@ class BarChart extends Chart
             $barLength = $maxValue > 0 ? round(($value / $maxValue) * $availableWidth) : 0;
 
             // Format the label with consistent spacing
-            $labelOutput = str_pad($label, $maxLabelLength, ' ', STR_PAD_RIGHT);
+            $labelOutput = str_pad((string) $label, $maxLabelLength, ' ', STR_PAD_RIGHT);
 
             // Draw the bar
             $bar = str_repeat('█', $barLength);
 
             // Colorize the bar (cycle through colors)
             $colorKeys = array_keys($this->colorCodes);
-            $colorIndex = crc32($label) % (count($colorKeys) - 1); // -1 to skip 'reset'
+            $colorIndex = crc32((string) $label) % (count($colorKeys) - 1); // -1 to skip 'reset'
             $color = $colorKeys[$colorIndex + 1]; // +1 to skip 'reset'
 
-            $output .= $labelOutput.' │ '.$this->colorize($bar, $color).' '.$value."\n";
+            $output .= $labelOutput . ' │ ' . $this->colorize($bar, $color) . ' ' . $value . "\n";
         }
 
         return $output;
@@ -45,11 +47,11 @@ class BarChart extends Chart
      *
      * @return int Maximum label length
      */
-    private function getMaxLabelLength()
+    private function getMaxLabelLength(): int
     {
         $maxLength = 0;
         foreach ($this->data as $label => $value) {
-            $length = strlen($label);
+            $length = strlen((string) $label);
             if ($length > $maxLength) {
                 $maxLength = $length;
             }

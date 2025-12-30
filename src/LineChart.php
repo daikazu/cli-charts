@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\CliCharts;
 
 /**
@@ -12,7 +14,7 @@ class LineChart extends Chart
      *
      * @return string The rendered chart
      */
-    public function render()
+    public function render(): string
     {
         $output = $this->drawTitle();
 
@@ -38,7 +40,8 @@ class LineChart extends Chart
 
         // Calculate positions for each data point
         $positions = [];
-        for ($i = 0; $i < count($points); $i++) {
+        $counter = count($points);
+        for ($i = 0; $i < $counter; $i++) {
             $value = $points[$i];
             // Scale the value to fit in the chart height
             // If minValue == maxValue, place the point in the middle
@@ -51,9 +54,10 @@ class LineChart extends Chart
             $positions[$i] = $y;
             $grid[$y][$i * 4] = '●'; // Position points with proper spacing
         }
+        $counter = count($positions);
 
         // Add connecting lines between points - with improved, cleaner connections
-        for ($i = 1; $i < count($positions); $i++) {
+        for ($i = 1; $i < $counter; $i++) {
             $prev_y = $positions[$i - 1];
             $curr_y = $positions[$i];
             $prev_x = ($i - 1) * 4;
@@ -124,8 +128,8 @@ class LineChart extends Chart
                     : floor($chartHeight / 2);
 
                 if ($y == $labelPosition ||
-                    ($y == 0 && $idx == 0) ||
-                    ($y == $chartHeight - 1 && $idx == count($yLabelValues) - 1)) {
+                    ($y === 0 && $idx === 0) ||
+                    ($y == $chartHeight - 1 && $idx === count($yLabelValues) - 1)) {
                     $yAxisLabel = $labelValue;
                     $showLabel = true;
                     break;
@@ -134,13 +138,14 @@ class LineChart extends Chart
 
             // Format the y-axis label
             if ($showLabel) {
-                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT).' │ ';
+                $output .= str_pad(round($yAxisLabel), 5, ' ', STR_PAD_LEFT) . ' │ ';
             } else {
                 $output .= '      │ ';
             }
+            $counter = count($row);
 
             // Draw the row with points and lines
-            for ($x = 0; $x < count($row); $x++) {
+            for ($x = 0; $x < $counter; $x++) {
                 // Display the cell content with appropriate color
                 if ($row[$x] === '●') {
                     $output .= $this->colorize($row[$x], 'red');
@@ -154,7 +159,7 @@ class LineChart extends Chart
         }
 
         // Draw the x-axis line with improved characters
-        $output .= '      └'.str_repeat('─', count($points) * 4)."\n";
+        $output .= '      └' . str_repeat('─', count($points) * 4) . "\n";
 
         // Draw x-axis labels
         $output .= '       ';
@@ -167,7 +172,7 @@ class LineChart extends Chart
         if (count($labels) > 1) {
             $firstWords = [];
             foreach ($labels as $label) {
-                $parts = explode(' ', $label);
+                $parts = explode(' ', (string) $label);
                 if (count($parts) > 1) {
                     $firstWords[] = $parts[0];
                 }
@@ -181,29 +186,26 @@ class LineChart extends Chart
                 }
             }
         }
+        $counter = count($labels);
 
-        for ($i = 0; $i < count($labels); $i++) {
+        for ($i = 0; $i < $counter; $i++) {
             $label = $labels[$i];
 
             // Create a smart abbreviation for the label
-            if ($hasPattern && strpos($label, $commonPrefix) === 0) {
+            if ($hasPattern && str_starts_with((string) $label, (string) $commonPrefix)) {
                 // For labels like "Category A", just use "A"
-                $parts = explode(' ', $label);
-                if (count($parts) > 1) {
-                    $labelText = $parts[1];
-                } else {
-                    $labelText = substr($label, 0, 2);
-                }
-            } elseif (strpos($label, ' ') !== false) {
+                $parts = explode(' ', (string) $label);
+                $labelText = count($parts) > 1 ? $parts[1] : substr((string) $label, 0, 2);
+            } elseif (str_contains((string) $label, ' ')) {
                 // For other multi-word labels
-                $parts = explode(' ', $label);
+                $parts = explode(' ', (string) $label);
                 $labelText = '';
                 foreach ($parts as $part) {
                     $labelText .= substr($part, 0, 1);
                 }
             } else {
                 // Regular labels: first 2 chars
-                $labelText = substr($label, 0, 2);
+                $labelText = substr((string) $label, 0, 2);
             }
 
             // Calculate position for this label
@@ -224,9 +226,8 @@ class LineChart extends Chart
                 $output .= '  ';
             }
         }
-        $output .= "\n";
 
-        return $output;
+        return $output . "\n";
     }
 
     /**
@@ -237,7 +238,7 @@ class LineChart extends Chart
     protected function getMinValue()
     {
         $min = PHP_FLOAT_MAX;
-        foreach ($this->data as $key => $value) {
+        foreach ($this->data as $value) {
             if (is_numeric($value) && $value < $min) {
                 $min = $value;
             }

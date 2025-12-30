@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Daikazu\CliCharts;
 
 /**
@@ -7,8 +9,6 @@ namespace Daikazu\CliCharts;
  */
 abstract class Chart
 {
-    protected $data = [];
-
     protected $width = 60;
 
     protected $height = 15;
@@ -19,14 +19,14 @@ abstract class Chart
 
     // ANSI color codes
     protected $colorCodes = [
-        'reset' => "\033[0m",
-        'red' => "\033[31m",
-        'green' => "\033[32m",
-        'yellow' => "\033[33m",
-        'blue' => "\033[34m",
+        'reset'   => "\033[0m",
+        'red'     => "\033[31m",
+        'green'   => "\033[32m",
+        'yellow'  => "\033[33m",
+        'blue'    => "\033[34m",
         'magenta' => "\033[35m",
-        'cyan' => "\033[36m",
-        'white' => "\033[37m",
+        'cyan'    => "\033[36m",
+        'white'   => "\033[37m",
     ];
 
     /**
@@ -35,10 +35,8 @@ abstract class Chart
      * @param  array  $data  Data to be displayed
      * @param  array  $options  Optional configuration
      */
-    public function __construct(array $data, array $options = [])
+    public function __construct(protected array $data, array $options = [])
     {
-        $this->data = $data;
-
         if (isset($options['width'])) {
             $this->width = $options['width'];
         }
@@ -57,19 +55,24 @@ abstract class Chart
     }
 
     /**
+     * Abstract method to render the chart
+     */
+    abstract public function render();
+
+    /**
      * Apply color to text if colors are enabled
      *
      * @param  string  $text  Text to color
      * @param  string  $color  Color to apply
      * @return string Colored text or original text
      */
-    protected function colorize($text, $color)
+    protected function colorize(string $text, $color)
     {
         if (! $this->colors || ! isset($this->colorCodes[$color])) {
             return $text;
         }
 
-        return $this->colorCodes[$color].$text.$this->colorCodes['reset'];
+        return $this->colorCodes[$color] . $text . $this->colorCodes['reset'];
     }
 
     /**
@@ -83,9 +86,9 @@ abstract class Chart
             return '';
         }
 
-        $padding = max(0, floor(($this->width - strlen($this->title)) / 2));
+        $padding = max(0, floor(($this->width - strlen((string) $this->title)) / 2));
 
-        return str_repeat(' ', $padding).$this->colorize($this->title, 'cyan')."\n\n";
+        return str_repeat(' ', $padding) . $this->colorize($this->title, 'cyan') . "\n\n";
     }
 
     /**
@@ -96,7 +99,7 @@ abstract class Chart
     protected function getMaxValue()
     {
         $max = 0;
-        foreach ($this->data as $key => $value) {
+        foreach ($this->data as $value) {
             if (is_numeric($value) && $value > $max) {
                 $max = $value;
             }
@@ -104,9 +107,4 @@ abstract class Chart
 
         return $max;
     }
-
-    /**
-     * Abstract method to render the chart
-     */
-    abstract public function render();
 }
