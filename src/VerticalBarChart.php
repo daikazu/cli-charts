@@ -11,18 +11,20 @@ class VerticalBarChart extends Chart
 {
     /**
      * Default options specific to vertical bar charts
+     *
+     * @var array<string, bool|int>
      */
     private static array $defaultOptions = [
         'showValues' => false,  // Show values on top of bars
-        'gridLines'  => true,    // Show horizontal grid lines
-        'barWidth'   => 1,         // Width of each bar in characters
+        'gridLines'  => true,   // Show horizontal grid lines
+        'barWidth'   => 1,      // Width of each bar in characters
     ];
 
     /**
      * Constructor for VerticalBarChart
      *
-     * @param  array  $data  Data to be displayed
-     * @param  array  $options  Optional configuration
+     * @param  array<string|int, int|float>  $data  Data to be displayed
+     * @param  array<string, mixed>  $options  Optional configuration
      */
     public function __construct(array $data, array $options = [])
     {
@@ -44,9 +46,16 @@ class VerticalBarChart extends Chart
         $minValue = $this->getMinValue();
         $valueRange = $maxValue - $minValue;
 
-        // Prepare data
-        $values = array_values($this->data);
-        $labels = array_keys($this->data);
+        // Prepare data - convert to properly typed arrays
+        /** @var array<int, float> $values */
+        $values = [];
+        /** @var array<int, string> $labels */
+        $labels = [];
+
+        foreach ($this->data as $label => $value) {
+            $labels[] = (string) $label;
+            $values[] = (float) $value;
+        }
 
         // Calculate bar width and spacing
         $totalBars = count($values);
@@ -60,6 +69,7 @@ class VerticalBarChart extends Chart
 
         // Create grid for the chart with wider spacing for labels
         $gridWidth = $totalBars * $barSpacing;
+        /** @var array<int, array<int, string>> $grid */
         $grid = [];
         for ($y = 0; $y < $chartHeight; $y++) {
             $grid[$y] = array_fill(0, $gridWidth, ' ');
@@ -71,9 +81,9 @@ class VerticalBarChart extends Chart
 
             // Calculate bar height (handle special case of all same values)
             if ($valueRange == 0) {
-                $barHeight = floor($chartHeight / 2); // Half height if all values are the same
+                $barHeight = (int) floor($chartHeight / 2); // Half height if all values are the same
             } else {
-                $barHeight = ceil(($value - $minValue) / $valueRange * $chartHeight);
+                $barHeight = (int) ceil(($value - $minValue) / $valueRange * $chartHeight);
             }
 
             // Ensure minimum visible height if value > 0
@@ -93,6 +103,7 @@ class VerticalBarChart extends Chart
         }
 
         // Draw y-axis with labels
+        /** @var array<int, float> $yLabelValues */
         $yLabelValues = [];
         if ($valueRange > 0) {
             // Calculate labels for y-axis at top, middle, and bottom
@@ -109,13 +120,13 @@ class VerticalBarChart extends Chart
             $row = $grid[$y];
 
             // Determine if we need to show a y-axis label at this position
-            $yAxisLabel = '';
+            $yAxisLabel = 0.0;
             $showLabel = false;
 
             foreach ($yLabelValues as $idx => $labelValue) {
                 $labelPosition = $valueRange > 0
-                    ? $chartHeight - 1 - round(($labelValue - $minValue) / $valueRange * ($chartHeight - 1))
-                    : floor($chartHeight / 2);
+                    ? (int) ($chartHeight - 1 - round(($labelValue - $minValue) / $valueRange * ($chartHeight - 1)))
+                    : (int) floor($chartHeight / 2);
 
                 if ($y == $labelPosition ||
                     ($y === 0 && $idx === 0) ||
@@ -146,7 +157,7 @@ class VerticalBarChart extends Chart
 
                 // Colorize the bar (cycle through colors for different bars)
                 $colorKeys = array_keys($this->colorCodes);
-                $colorIndex = crc32((string) $labels[$i]) % (count($colorKeys) - 1); // -1 to skip 'reset'
+                $colorIndex = crc32($labels[$i]) % (count($colorKeys) - 1); // -1 to skip 'reset'
                 $color = $colorKeys[$colorIndex + 1]; // +1 to skip 'reset'
 
                 if (isset($row[$barPosition]) && $row[$barPosition] === '█') {
@@ -156,9 +167,9 @@ class VerticalBarChart extends Chart
                     // Show values only at the top segment of each bar
                     if (isset($this->options['showValues']) && $this->options['showValues'] &&
                         // Check if this is the top segment of the bar by checking the segment above
-                        ($y === 0 || ($y > 0 && isset($grid[$y - 1][$barPosition]) && $grid[$y - 1][$barPosition] !== '█'))) {
+                        ($y === 0 || (isset($grid[$y - 1][$barPosition]) && $grid[$y - 1][$barPosition] !== '█'))) {
                         // Show value above the bar (if there's space)
-                        $valueStr = (string) $values[$i];
+                        $valueStr = (string) (int) $values[$i];
                         if (strlen($valueStr) <= $barSpacing - 1) {
                             $output .= $this->colorize($valueStr, $color);
                             $output .= str_repeat(' ', $barSpacing - 1 - strlen($valueStr));
@@ -216,6 +227,7 @@ class VerticalBarChart extends Chart
 
         // Add a legend with values
         $output .= "\n";
+        /** @var array<int, string> $valueLabels */
         $valueLabels = [];
         for ($i = 0; $i < $totalBars; $i++) {
             $label = $labels[$i];
@@ -223,12 +235,12 @@ class VerticalBarChart extends Chart
 
             // Colorize the label
             $colorKeys = array_keys($this->colorCodes);
-            $colorIndex = crc32((string) $label) % (count($colorKeys) - 1);
+            $colorIndex = crc32($label) % (count($colorKeys) - 1);
             $color = $colorKeys[$colorIndex + 1];
 
             // Format: Label: Value (with abbreviated label)
             $abbreviatedLabel = $this->abbreviateLabel($label);
-            $valueLabels[] = $this->colorize($abbreviatedLabel, $color) . ': ' . $value;
+            $valueLabels[] = $this->colorize($abbreviatedLabel, $color) . ': ' . (int) $value;
         }
 
         // Display the legend in multiple columns if needed
@@ -236,20 +248,20 @@ class VerticalBarChart extends Chart
         $currentLine = '';
 
         foreach ($valueLabels as $index => $item) {
-            $itemWithoutColors = preg_replace('/\033\[\d+m/', '', $item);
+            $itemWithoutColors = preg_replace('/\033\[\d+m/', '', $item) ?? '';
 
             // Check if adding this item would exceed the width
-            if (strlen($currentLine) + strlen((string) $itemWithoutColors) + 2 > $legendWidth && ($currentLine !== '' && $currentLine !== '0')) {
+            if (strlen($currentLine) + strlen($itemWithoutColors) + 2 > $legendWidth && $currentLine !== '') {
                 $output .= '      ' . $currentLine . "\n";
                 $currentLine = $item;
             } else {
                 // Use semicolon as separator instead of comma to avoid confusion with multi-word labels
-                $separator = ($index > 0 && ($currentLine !== '' && $currentLine !== '0')) ? '; ' : '';
+                $separator = ($index > 0 && $currentLine !== '') ? '; ' : '';
                 $currentLine .= $separator . $item;
             }
         }
 
-        if ($currentLine !== '' && $currentLine !== '0') {
+        if ($currentLine !== '') {
             $output .= '      ' . $currentLine . "\n";
         }
 
@@ -262,7 +274,7 @@ class VerticalBarChart extends Chart
      * @param  string  $label  The original label
      * @return string The abbreviated label
      */
-    protected function abbreviateLabel($label)
+    protected function abbreviateLabel(string $label): string
     {
         // If it's a single word or already short, return as is
         if (! str_contains($label, ' ') || strlen($label) <= 6) {
@@ -311,18 +323,19 @@ class VerticalBarChart extends Chart
      *
      * @return float Minimum value
      */
-    protected function getMinValue()
+    protected function getMinValue(): float
     {
         $min = PHP_FLOAT_MAX;
         foreach ($this->data as $value) {
-            if (is_numeric($value) && $value < $min) {
-                $min = $value;
+            $floatValue = (float) $value;
+            if ($floatValue < $min) {
+                $min = $floatValue;
             }
         }
 
         // For bar charts, we typically want to start at 0 unless
         // we have negative values
-        return $min < 0 ? $min : 0;
+        return $min < 0 ? $min : 0.0;
     }
 
     /**

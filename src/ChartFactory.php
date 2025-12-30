@@ -15,13 +15,13 @@ class ChartFactory
      * Create a chart instance
      *
      * @param  string  $type  Type of chart to create
-     * @param  array  $data  Data for the chart
-     * @param  array  $options  Optional configuration
-     * @return Chart The created chart
+     * @param  array<string|int, int|float>  $data  Data for the chart
+     * @param  array<string, mixed>  $options  Optional configuration
+     * @return BarChart|VerticalBarChart|LineChart|PieChart|StackedBarChart|PercentageBarChart The created chart
      *
      * @throws InvalidArgumentException If chart type is invalid
      */
-    public static function create($type, array $data, array $options = []): BarChart | VerticalBarChart | LineChart | PieChart | StackedBarChart | PercentageBarChart
+    public static function create(string $type, array $data, array $options = []): BarChart|VerticalBarChart|LineChart|PieChart|StackedBarChart|PercentageBarChart
     {
         return match (strtolower($type)) {
             'bar'  => new BarChart($data, $options),

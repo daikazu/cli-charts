@@ -11,6 +11,8 @@ class StackedBarChart extends Chart
 {
     /**
      * Block characters for partial fills
+     *
+     * @var array<int, string>
      */
     private const array BLOCKS = [
         0 => ' ',
@@ -31,7 +33,12 @@ class StackedBarChart extends Chart
     {
         $output = $this->drawTitle();
 
-        $total = array_sum($this->data);
+        // Calculate total
+        $total = 0.0;
+        foreach ($this->data as $value) {
+            $total += (float) $value;
+        }
+
         if ($total <= 0) {
             return $output . "Error: Total value must be greater than zero.\n";
         }
@@ -40,18 +47,20 @@ class StackedBarChart extends Chart
         $barWidth = $this->width - 2;
 
         // Calculate segments
+        /** @var array<int, array{label: string, value: float, percentage: float, width: float, color: string}> $segments */
         $segments = [];
         $colorKeys = array_keys($this->colorCodes);
 
         $i = 0;
         foreach ($this->data as $label => $value) {
-            $percentage = ($value / $total) * 100;
-            $segmentWidth = ($value / $total) * $barWidth;
+            $numericValue = (float) $value;
+            $percentage = ($numericValue / $total) * 100;
+            $segmentWidth = ($numericValue / $total) * $barWidth;
             $colorIndex = ($i % (count($colorKeys) - 1)) + 1;
 
             $segments[] = [
-                'label'      => $label,
-                'value'      => $value,
+                'label'      => (string) $label,
+                'value'      => $numericValue,
                 'percentage' => $percentage,
                 'width'      => $segmentWidth,
                 'color'      => $colorKeys[$colorIndex],
@@ -98,15 +107,16 @@ class StackedBarChart extends Chart
     /**
      * Draw the legend with labels and percentages
      *
-     * @param  array<int, array{label: string|int, value: int|float, percentage: float, width: float, color: string}>  $segments
+     * @param  array<int, array{label: string, value: float, percentage: float, width: float, color: string}>  $segments
      */
     private function drawLegend(array $segments): string
     {
         $output = ' ';
+        /** @var array<int, array{text: string, color: string}> $legendItems */
         $legendItems = [];
 
         foreach ($segments as $segment) {
-            $label = $this->abbreviateLabel((string) $segment['label']);
+            $label = $this->abbreviateLabel($segment['label']);
             $pct = (int) round($segment['percentage']);
             $legendItems[] = [
                 'text'  => "{$label} {$pct}%",
@@ -115,7 +125,7 @@ class StackedBarChart extends Chart
         }
 
         // Calculate spacing
-        $totalTextLength = array_sum(array_map(fn (array $item): int => strlen((string) $item['text']), $legendItems));
+        $totalTextLength = array_sum(array_map(fn (array $item): int => strlen($item['text']), $legendItems));
         $availableSpace = $this->width - 2 - $totalTextLength;
         $gaps = max(1, count($legendItems) - 1);
         $spacing = max(2, (int) floor($availableSpace / $gaps));

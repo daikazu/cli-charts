@@ -1,9 +1,14 @@
-# PHP CLI Charts
+<picture>
+   <source media="(prefers-color-scheme: dark)" srcset="art/header-dark.png">
+   <img alt="Logo for CLI Charts" src="art/header-light.png">
+</picture>
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/daikazu/cli-charts.svg?style=flat-square)](https://packagist.org/packages/daikazu/cli-charts)
 [![GitHub Tests Action Status](https://img.shields.io/github/actions/workflow/status/daikazu/cli-charts/run-tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/daikazu/cli-charts/actions?query=workflow%3Arun-tests+branch%3Amain)
 [![GitHub Code Style Action Status](https://img.shields.io/github/actions/workflow/status/daikazu/cli-charts/fix-php-code-style-issues.yml?branch=main&label=code%20style&style=flat-square)](https://github.com/daikazu/cli-charts/actions?query=workflow%3A"Fix+PHP+code+style+issues"+branch%3Amain)
 [![Total Downloads](https://img.shields.io/packagist/dt/daikazu/cli-charts.svg?style=flat-square)](https://packagist.org/packages/daikazu/cli-charts)
+
+# PHP CLI Charts
 
 A PHP library for rendering beautiful charts in the command line using Unicode characters, Braille patterns, and ANSI colors.
 

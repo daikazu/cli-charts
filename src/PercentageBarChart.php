@@ -11,6 +11,8 @@ class PercentageBarChart extends Chart
 {
     /**
      * Block characters for partial fills (eighths)
+     *
+     * @var array<int, string>
      */
     private const array BLOCKS = [
         0 => ' ',
@@ -31,7 +33,12 @@ class PercentageBarChart extends Chart
     {
         $output = $this->drawTitle();
 
-        $total = array_sum($this->data);
+        // Calculate total
+        $total = 0.0;
+        foreach ($this->data as $value) {
+            $total += (float) $value;
+        }
+
         if ($total <= 0) {
             return $output . "Error: Total value must be greater than zero.\n";
         }
@@ -52,7 +59,8 @@ class PercentageBarChart extends Chart
 
         $i = 0;
         foreach ($this->data as $label => $value) {
-            $percentage = ($value / $total) * 100;
+            $numericValue = (float) $value;
+            $percentage = ($numericValue / $total) * 100;
             $colorIndex = ($i % (count($colorKeys) - 1)) + 1;
             $color = $colorKeys[$colorIndex];
 

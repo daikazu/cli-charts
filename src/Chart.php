@@ -9,16 +9,16 @@ namespace Daikazu\CliCharts;
  */
 abstract class Chart
 {
-    protected $width = 60;
+    protected int $width = 60;
 
-    protected $height = 15;
+    protected int $height = 15;
 
-    protected $title = '';
+    protected string $title = '';
 
-    protected $colors = true;
+    protected bool $colors = true;
 
-    // ANSI color codes
-    protected $colorCodes = [
+    /** @var array<string, string> ANSI color codes */
+    protected array $colorCodes = [
         'reset'   => "\033[0m",
         'red'     => "\033[31m",
         'green'   => "\033[32m",
@@ -32,20 +32,22 @@ abstract class Chart
     /**
      * Constructor for Chart
      *
-     * @param  array  $data  Data to be displayed
-     * @param  array  $options  Optional configuration
+     * @param  array<string|int, int|float>  $data  Data to be displayed
+     * @param  array<string, mixed>  $options  Optional configuration
      */
-    public function __construct(protected array $data, protected array $options = [])
-    {
-        if (isset($this->options['width'])) {
+    public function __construct(
+        protected array $data,
+        protected array $options = []
+    ) {
+        if (isset($this->options['width']) && is_int($this->options['width'])) {
             $this->width = $this->options['width'];
         }
 
-        if (isset($this->options['height'])) {
+        if (isset($this->options['height']) && is_int($this->options['height'])) {
             $this->height = $this->options['height'];
         }
 
-        if (isset($this->options['title'])) {
+        if (isset($this->options['title']) && is_string($this->options['title'])) {
             $this->title = $this->options['title'];
         }
 
@@ -57,7 +59,7 @@ abstract class Chart
     /**
      * Abstract method to render the chart
      */
-    abstract public function render();
+    abstract public function render(): string;
 
     /**
      * Apply color to text if colors are enabled
@@ -66,7 +68,7 @@ abstract class Chart
      * @param  string  $color  Color to apply
      * @return string Colored text or original text
      */
-    protected function colorize(string $text, $color)
+    protected function colorize(string $text, string $color): string
     {
         if (! $this->colors || ! isset($this->colorCodes[$color])) {
             return $text;
@@ -80,13 +82,13 @@ abstract class Chart
      *
      * @return string The formatted title
      */
-    protected function drawTitle()
+    protected function drawTitle(): string
     {
-        if (empty($this->title)) {
+        if ($this->title === '') {
             return '';
         }
 
-        $padding = (int) max(0, floor(($this->width - strlen((string) $this->title)) / 2));
+        $padding = (int) max(0, floor(($this->width - strlen($this->title)) / 2));
 
         return str_repeat(' ', $padding) . $this->colorize($this->title, 'cyan') . "\n\n";
     }
@@ -96,12 +98,13 @@ abstract class Chart
      *
      * @return float Maximum value
      */
-    protected function getMaxValue()
+    protected function getMaxValue(): float
     {
-        $max = 0;
+        $max = 0.0;
         foreach ($this->data as $value) {
-            if (is_numeric($value) && $value > $max) {
-                $max = $value;
+            $floatValue = (float) $value;
+            if ($floatValue > $max) {
+                $max = $floatValue;
             }
         }
 

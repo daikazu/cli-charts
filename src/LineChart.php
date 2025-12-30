@@ -22,8 +22,17 @@ class LineChart extends Chart
             return $output;
         }
 
-        $points = array_values($this->data);
-        $labels = array_keys($this->data);
+        // Prepare data - convert to properly typed arrays
+        /** @var array<int, float> $points */
+        $points = [];
+        /** @var array<int, string> $labels */
+        $labels = [];
+
+        foreach ($this->data as $label => $value) {
+            $labels[] = (string) $label;
+            $points[] = (float) $value;
+        }
+
         $numPoints = count($points);
 
         if ($numPoints < 2) {
@@ -31,8 +40,12 @@ class LineChart extends Chart
         }
 
         // Get color options
-        $lineColor = $this->options['lineColor'] ?? 'cyan';
-        $pointColor = $this->options['pointColor'] ?? null;
+        $lineColor = isset($this->options['lineColor']) && is_string($this->options['lineColor'])
+            ? $this->options['lineColor']
+            : 'cyan';
+        $pointColor = isset($this->options['pointColor']) && is_string($this->options['pointColor'])
+            ? $this->options['pointColor']
+            : null;
 
         $maxValue = $this->getMaxValue();
         $minValue = $this->getMinValue();
@@ -49,15 +62,18 @@ class LineChart extends Chart
         $dotHeight = $chartHeight * 4;
 
         // Create dot grid
+        /** @var array<int, array<int, bool>> $grid */
         $grid = [];
         for ($y = 0; $y < $dotHeight; $y++) {
             $grid[$y] = array_fill(0, $dotWidth, false);
         }
 
         // Track which character cells contain data points (for coloring)
+        /** @var array<string, bool> $pointCells */
         $pointCells = [];
 
         // Calculate point positions in dot coordinates
+        /** @var array<int, array{x: int, y: int, value: float}> $pointPositions */
         $pointPositions = [];
         for ($i = 0; $i < $numPoints; $i++) {
             // X position: spread points evenly across width
@@ -152,14 +168,15 @@ class LineChart extends Chart
     {
         $min = PHP_FLOAT_MAX;
         foreach ($this->data as $value) {
-            if (is_numeric($value) && $value < $min) {
-                $min = (float) $value;
+            $floatValue = (float) $value;
+            if ($floatValue < $min) {
+                $min = $floatValue;
             }
         }
 
         // Start from 0 if min is positive and not too far from 0
         if ($min > 0 && $min < 0.3 * $this->getMaxValue()) {
-            return 0;
+            return 0.0;
         }
 
         return $min;
@@ -167,6 +184,8 @@ class LineChart extends Chart
 
     /**
      * Draw a line between two points using Bresenham's algorithm
+     *
+     * @param  array<int, array<int, bool>>  $grid
      */
     private function drawLine(array &$grid, int $x0, int $y0, int $x1, int $y1): void
     {
@@ -177,7 +196,7 @@ class LineChart extends Chart
         $err = $dx - $dy;
 
         $maxY = count($grid) - 1;
-        $maxX = count($grid[0]) - 1;
+        $maxX = isset($grid[0]) ? count($grid[0]) - 1 : 0;
 
         while (true) {
             if ($y0 >= 0 && $y0 <= $maxY && $x0 >= 0 && $x0 <= $maxX) {
@@ -202,6 +221,8 @@ class LineChart extends Chart
 
     /**
      * Convert a 2x4 cell of the dot grid to a Braille character
+     *
+     * @param  array<int, array<int, bool>>  $grid
      */
     private function getBrailleChar(array $grid, int $charX, int $charY): string
     {
@@ -224,7 +245,7 @@ class LineChart extends Chart
             $y = $dotY + $row;
             $x = $dotX + $col;
 
-            if (isset($grid[$y][$x]) && $grid[$y][$x]) {
+            if (isset($grid[$y][$x]) && $grid[$y][$x] === true) {
                 $bits |= $bit;
             }
         }
@@ -239,10 +260,11 @@ class LineChart extends Chart
     /**
      * Calculate Y-axis labels
      *
-     * @return array<int, int|float>
+     * @return array<int, int>
      */
     private function calculateYLabels(float $min, float $max, int $height): array
     {
+        /** @var array<int, int> $labels */
         $labels = [];
 
         if ($max === $min) {
@@ -262,6 +284,8 @@ class LineChart extends Chart
 
     /**
      * Get the Y label for a specific row, if any
+     *
+     * @param  array<int, int>  $yLabels
      */
     private function getYLabelForRow(int $row, int $totalRows, array $yLabels): ?int
     {
@@ -283,13 +307,20 @@ class LineChart extends Chart
 
     /**
      * Draw X-axis labels
+     *
+     * @param  array<int, string>  $labels
      */
     private function drawXAxisLabels(array $labels, int $chartWidth, int $yAxisWidth): string
     {
         $output = str_repeat(' ', $yAxisWidth);
         $numLabels = count($labels);
 
+        if ($numLabels < 2) {
+            return $output . "\n";
+        }
+
         // Calculate positions for each label
+        /** @var array<int, int> $positions */
         $positions = [];
         for ($i = 0; $i < $numLabels; $i++) {
             $positions[$i] = (int) round(($i / ($numLabels - 1)) * ($chartWidth - 1));
@@ -298,7 +329,7 @@ class LineChart extends Chart
         // Build label string
         $labelLine = str_repeat(' ', $chartWidth);
         foreach ($labels as $i => $label) {
-            $abbrev = $this->abbreviateLabel((string) $label);
+            $abbrev = $this->abbreviateLabel($label);
             $pos = $positions[$i];
 
             // Center the label around its position

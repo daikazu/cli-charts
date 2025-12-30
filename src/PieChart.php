@@ -26,22 +26,28 @@ class PieChart extends Chart
     {
         $output = $this->drawTitle();
 
-        // Calculate total and percentages
-        $total = array_sum($this->data);
+        // Calculate total
+        $total = 0.0;
+        foreach ($this->data as $value) {
+            $total += (float) $value;
+        }
+
         if ($total <= 0) {
             return $output . "Error: Total value must be greater than zero.\n";
         }
 
         // Calculate percentages and cumulative angles
+        /** @var array<int, array{label: string, value: float, percentage: float, startAngle: float, endAngle: float}> $segments */
         $segments = [];
         $startAngle = -M_PI / 2; // Start at top (12 o'clock)
 
         foreach ($this->data as $label => $value) {
-            $percentage = ($value / $total) * 100;
-            $sweepAngle = ($value / $total) * 2 * M_PI;
+            $numericValue = (float) $value;
+            $percentage = ($numericValue / $total) * 100;
+            $sweepAngle = ($numericValue / $total) * 2 * M_PI;
             $segments[] = [
-                'label'      => $label,
-                'value'      => $value,
+                'label'      => (string) $label,
+                'value'      => $numericValue,
                 'percentage' => $percentage,
                 'startAngle' => $startAngle,
                 'endAngle'   => $startAngle + $sweepAngle,
@@ -64,6 +70,7 @@ class PieChart extends Chart
 
         // Assign colors to segments
         $colorKeys = array_keys($this->colorCodes);
+        /** @var array<int, string> $segmentColors */
         $segmentColors = [];
         foreach ($segments as $i => $segment) {
             $colorIndex = ($i % (count($colorKeys) - 1)) + 1;
@@ -80,6 +87,7 @@ class PieChart extends Chart
 
             for ($charX = 0; $charX < $charWidth; $charX++) {
                 // For each character cell, check all 8 dot positions
+                /** @var array<int, int> $dotsPerSegment */
                 $dotsPerSegment = [];
 
                 for ($dotRow = 0; $dotRow < 4; $dotRow++) {
@@ -216,7 +224,7 @@ class PieChart extends Chart
     /**
      * Draw the legend
      *
-     * @param  array<int, array{label: string|int, value: int|float, percentage: float, startAngle: float, endAngle: float}>  $segments
+     * @param  array<int, array{label: string, value: float, percentage: float, startAngle: float, endAngle: float}>  $segments
      * @param  array<int, string>  $colors
      */
     private function drawLegend(array $segments, array $colors): string
@@ -225,7 +233,7 @@ class PieChart extends Chart
         $maxLabelLen = 0;
 
         foreach ($segments as $segment) {
-            $len = strlen((string) $segment['label']);
+            $len = strlen($segment['label']);
             if ($len > $maxLabelLen) {
                 $maxLabelLen = $len;
             }
@@ -235,7 +243,7 @@ class PieChart extends Chart
 
         foreach ($segments as $i => $segment) {
             $label = str_pad(
-                substr((string) $segment['label'], 0, $maxLabelLen),
+                substr($segment['label'], 0, $maxLabelLen),
                 $maxLabelLen
             );
             $marker = $this->colorize('●', $colors[$i]);

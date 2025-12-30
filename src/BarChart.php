@@ -14,7 +14,7 @@ class BarChart extends Chart
      *
      * @return string The rendered chart
      */
-    public function render()
+    public function render(): string
     {
         $output = $this->drawTitle();
 
@@ -23,7 +23,8 @@ class BarChart extends Chart
         $availableWidth = $this->width - $maxLabelLength - 3;
 
         foreach ($this->data as $label => $value) {
-            $barLength = $maxValue > 0 ? (int) round(($value / $maxValue) * $availableWidth) : 0;
+            $numericValue = (float) $value;
+            $barLength = $maxValue > 0 ? (int) round(($numericValue / $maxValue) * $availableWidth) : 0;
 
             // Format the label with consistent spacing
             $labelOutput = str_pad((string) $label, $maxLabelLength, ' ', STR_PAD_RIGHT);
