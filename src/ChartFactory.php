@@ -21,7 +21,7 @@ class ChartFactory
      *
      * @throws InvalidArgumentException If chart type is invalid
      */
-    public static function create(string $type, array $data, array $options = []): BarChart|VerticalBarChart|LineChart|PieChart|StackedBarChart|PercentageBarChart
+    public static function create(string $type, array $data, array $options = []): BarChart | VerticalBarChart | LineChart | PieChart | StackedBarChart | PercentageBarChart
     {
         return match (strtolower($type)) {
             'bar'  => new BarChart($data, $options),
