@@ -5,19 +5,40 @@ declare(strict_types=1);
 namespace Daikazu\CliCharts;
 
 /**
- * Pie Chart implementation for CLI
+ * Pie Chart implementation for CLI using Braille characters
  */
 class PieChart extends Chart
 {
-    // Full block character for drawing the pie
-    protected $fullBlock = '█';
-
-    protected $emptyBlock = ' ';
+    /**
+     * Braille dot positions (each character is 2 columns x 4 rows)
+     * Dot numbering:
+     *   0  3
+     *   1  4
+     *   2  5
+     *   6  7
+     */
+    private const BRAILLE_BASE = 0x2800;
 
     /**
-     * Render a pie chart
-     *
-     * @return string The rendered chart
+     * Get the braille dot bit for a given row/col position
+     * Row 0-3 (top to bottom), Col 0-1 (left to right)
+     */
+    private function getDotBit(int $row, int $col): int
+    {
+        // Braille dot pattern bits
+        $dotBits = [
+            // col 0    col 1
+            [0x01,     0x08],   // row 0
+            [0x02,     0x10],   // row 1
+            [0x04,     0x20],   // row 2
+            [0x40,     0x80],   // row 3
+        ];
+
+        return $dotBits[$row][$col];
+    }
+
+    /**
+     * Render a pie chart using Braille characters
      */
     public function render(): string
     {
@@ -29,213 +50,203 @@ class PieChart extends Chart
             return $output . "Error: Total value must be greater than zero.\n";
         }
 
-        // Store a copy of the original data for consistent display
-        $originalData = $this->data;
+        // Calculate percentages and cumulative angles
+        $segments = [];
+        $startAngle = -M_PI / 2; // Start at top (12 o'clock)
 
-        // Calculate percentages using original data
-        $percentages = [];
-        foreach ($originalData as $label => $value) {
-            $percentages[$label] = ($value / $total) * 100;
+        foreach ($this->data as $label => $value) {
+            $percentage = ($value / $total) * 100;
+            $sweepAngle = ($value / $total) * 2 * M_PI;
+            $segments[] = [
+                'label'      => $label,
+                'value'      => $value,
+                'percentage' => $percentage,
+                'startAngle' => $startAngle,
+                'endAngle'   => $startAngle + $sweepAngle,
+            ];
+            $startAngle += $sweepAngle;
         }
 
-        // Make a sorted copy for the legend
-        $sortedData = $originalData;
-        arsort($sortedData);
+        // Calculate dimensions
+        // Braille: 2 dots wide x 4 dots tall per character
+        $charRadius = (int) min(8, floor($this->width / 8));
+        $dotRadius = $charRadius * 2; // Horizontal dot radius
+        $dotRadiusY = $charRadius * 4; // Vertical dot radius (4 dots per char height)
 
-        // Calculate the pie chart dimensions
-        $radius = (int) min(10, floor($this->width / 6)); // Adjust radius based on width
-        $radiusY = $radius;
-        $radiusX = $radius * 2;
+        // Create dot grid (higher resolution than character grid)
+        $dotWidth = $dotRadius * 2;
+        $dotHeight = $dotRadiusY * 2;
+        $centerX = $dotRadius;
+        $centerY = $dotRadiusY;
 
-        // Create an empty canvas for the pie
-        $diameter = $radius * 2;
-        $canvas = [];
-        for ($y = 0; $y < $diameter; $y++) {
-            $canvas[$y] = array_fill(0, $radiusX * 2, $this->emptyBlock);
+        // Assign colors to segments
+        $colorKeys = array_keys($this->colorCodes);
+        $segmentColors = [];
+        foreach ($segments as $i => $segment) {
+            $colorIndex = ($i % (count($colorKeys) - 1)) + 1;
+            $segmentColors[$i] = $colorKeys[$colorIndex];
         }
 
-        // Draw the pie chart on the canvas using exact percentages
-        $this->drawPieOnCanvas($canvas, $radiusX, $radiusY, $percentages);
+        // Render character by character
+        $charHeight = (int) ceil($dotHeight / 4);
+        $charWidth = (int) ceil($dotWidth / 2);
 
-        // Render the canvas
-        for ($y = 0; $y < $diameter; $y++) {
-            $output .= str_repeat(' ', $radius) . implode('', $canvas[$y]) . "\n";
+        for ($charY = 0; $charY < $charHeight; $charY++) {
+            // Add left padding
+            $output .= str_repeat(' ', max(0, (int) (($this->width - $charWidth * 2) / 4)));
+
+            for ($charX = 0; $charX < $charWidth; $charX++) {
+                // For each character cell, check all 8 dot positions
+                $dotsPerSegment = [];
+
+                for ($dotRow = 0; $dotRow < 4; $dotRow++) {
+                    for ($dotCol = 0; $dotCol < 2; $dotCol++) {
+                        $dotX = $charX * 2 + $dotCol;
+                        $dotY = $charY * 4 + $dotRow;
+
+                        // Check if this dot is inside the circle
+                        // Normalize to unit circle for proper aspect ratio
+                        $normalizedX = ($dotX - $centerX) / $dotRadius;
+                        $normalizedY = ($dotY - $centerY) / $dotRadiusY;
+                        $distance = sqrt($normalizedX * $normalizedX + $normalizedY * $normalizedY);
+
+                        if ($distance <= 0.95) {
+                            // Find which segment this dot belongs to
+                            // Use normalized coords for consistent angle calculation
+                            $angle = atan2($normalizedY, $normalizedX);
+
+                            foreach ($segments as $i => $segment) {
+                                $start = $segment['startAngle'];
+                                $end = $segment['endAngle'];
+
+                                // Normalize angle comparison
+                                if ($this->angleInRange($angle, $start, $end)) {
+                                    if (! isset($dotsPerSegment[$i])) {
+                                        $dotsPerSegment[$i] = 0;
+                                    }
+                                    $dotsPerSegment[$i] |= $this->getDotBit($dotRow, $dotCol);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Render the character
+                if (empty($dotsPerSegment)) {
+                    $output .= ' ';
+                } else {
+                    // Find the dominant segment (most dots)
+                    $maxDots = 0;
+                    $dominantSegment = 0;
+                    $totalBits = 0;
+
+                    foreach ($dotsPerSegment as $segmentIndex => $bits) {
+                        $dotCount = $this->countBits($bits);
+                        $totalBits |= $bits;
+                        if ($dotCount > $maxDots) {
+                            $maxDots = $dotCount;
+                            $dominantSegment = $segmentIndex;
+                        }
+                    }
+
+                    $brailleChar = mb_chr(self::BRAILLE_BASE | $totalBits);
+                    $output .= $this->colorize($brailleChar, $segmentColors[$dominantSegment]);
+                }
+            }
+            $output .= "\n";
         }
 
         $output .= "\n";
 
-        // Draw the legend with percentages
-        $legendLines = [];
-        $i = 0;
-        $maxLabelLength = $this->getMaxLabelLength();
-
-        // Create legend items using sorted data for readability
-        foreach ($sortedData as $label => $value) {
-            $percentage = $percentages[$label];
-
-            // Prepare colorized marker with consistent color mapping
-            $colorKeys = array_keys($this->colorCodes);
-
-            // Calculate the same color index as in drawPieOnCanvas for consistency
-            $labels = array_keys($percentages);
-            $labelIndex = array_search($label, $labels);
-            $colorIndex = ($labelIndex % (count($colorKeys) - 1)) + 1; // Skip 'reset'
-
-            $color = $colorKeys[$colorIndex];
-            $marker = $this->colorize('■', $color);
-
-            // Format: ■ Label: 42.5% (123)
-            $formattedValue = number_format($value, 0, '.', ',');
-            $legendItem = sprintf(
-                '%s %s: %.1f%% (%s)',
-                $marker,
-                str_pad(substr((string) $label, 0, min($maxLabelLength, 12)), min($maxLabelLength, 12), ' '),
-                $percentage,
-                $formattedValue
-            );
-
-            $legendLines[] = $legendItem;
-            $i++;
-        }
-
-        // Display the legend
-        $maxLegendItems = floor($this->height / 2); // Limit legend items based on height
-
-        for ($i = 0; $i < min(count($legendLines), $maxLegendItems); $i++) {
-            $output .= str_repeat(' ', $radius) . $legendLines[$i] . "\n";
-        }
-
-        // If there are more items than can fit, add a note
-        if (count($legendLines) > $maxLegendItems) {
-            $output .= str_repeat(' ', $radius) . '(+' . (count($legendLines) - $maxLegendItems) . " more items)\n";
-        }
+        // Draw legend
+        $output .= $this->drawLegend($segments, $segmentColors);
 
         return $output;
     }
 
     /**
-     * Draw the pie chart on the canvas
-     *
-     * @param  array  $canvas  The canvas to draw on
-     * @param  int  $radiusX  The horizontal radius of the pie
-     * @param  int  $radiusY  The vertical radius of the pie
-     * @param  array  $percentages  The data percentages
+     * Normalize angle to [0, 2*PI) range
      */
-    protected function drawPieOnCanvas(array &$canvas, $radiusX, $radiusY, array $percentages)
+    private function normalizeAngle(float $angle): float
     {
-        $centerX = $radiusX;
-        $centerY = $radiusY;
-
-        // Count the total number of pixels in the pie
-        $totalPiePixels = 0;
-        $piePixelCoordinates = [];
-
-        // First pass: Identify all pixels that belong to the pie
-        for ($y = 0; $y < $radiusY * 2; $y++) {
-            for ($x = 0; $x < $radiusX * 2; $x++) {
-                $dx = $x - $centerX;
-                $dy = $y - $centerY;
-
-                // Apply a correction to create a more circular appearance
-                $distanceX = $dx / $radiusX;
-                $distanceY = $dy / ($radiusY * 0.8); // Adjust Y to compensate for terminal character aspect ratio
-
-                $distance = sqrt($distanceX * $distanceX + $distanceY * $distanceY);
-
-                if ($distance <= 1.0) {
-                    $totalPiePixels++;
-                    $piePixelCoordinates[] = [$x, $y];
-                }
-            }
+        while ($angle < 0) {
+            $angle += 2 * M_PI;
+        }
+        while ($angle >= 2 * M_PI) {
+            $angle -= 2 * M_PI;
         }
 
-        if ($totalPiePixels === 0) {
-            return; // No pixels to draw
-        }
-
-        // Calculate the exact number of pixels for each segment
-        $pixelsPerSegment = [];
-        $totalPercentage = array_sum($percentages);
-        $pixelsAssigned = 0;
-
-        // Sort segments from largest to smallest for better distribution
-        $segmentLabels = array_keys($percentages);
-        $segmentPercentages = array_values($percentages);
-        array_multisort($segmentPercentages, SORT_DESC, $segmentLabels);
-
-        // Assign pixels to each segment based on percentages
-        foreach ($segmentLabels as $index => $label) {
-            $percentage = $percentages[$label];
-            $pixelCount = round(($percentage / $totalPercentage) * $totalPiePixels);
-
-            // Ensure at least 1 pixel for non-zero segments
-            if ($percentage > 0 && $pixelCount == 0) {
-                $pixelCount = 1;
-            }
-
-            // Last segment gets remaining pixels to ensure total is exact
-            if ($index === count($segmentLabels) - 1) {
-                $pixelCount = $totalPiePixels - $pixelsAssigned;
-            }
-
-            $pixelsPerSegment[$label] = $pixelCount;
-            $pixelsAssigned += $pixelCount;
-        }
-
-        // Create color assignments
-        $colorAssignments = [];
-        $i = 0;
-        $colorKeys = array_keys($this->colorCodes);
-        $availableColors = count($colorKeys) - 1; // Skip 'reset'
-
-        foreach ($segmentLabels as $label) {
-            $colorIndex = ($i % $availableColors) + 1; // Skip 'reset'
-            $colorAssignments[$label] = $colorKeys[$colorIndex];
-            $i++;
-        }
-
-        // Sort pixels by angle to distribute segments properly
-        usort($piePixelCoordinates, function (array $a, array $b) use ($centerX, $centerY): int {
-            // Calculate angles for both pixels (in radians)
-            $angleA = atan2($a[1] - $centerY, $a[0] - $centerX);
-            $angleB = atan2($b[1] - $centerY, $b[0] - $centerX);
-
-            // Sort by angle
-            return $angleA <=> $angleB;
-        });
-
-        // Now assign pixels to segments
-        $currentPixel = 0;
-        foreach ($pixelsPerSegment as $label => $pixelCount) {
-            $color = $colorAssignments[$label];
-
-            // Assign this segment's pixels
-            for ($i = 0; $i < $pixelCount && $currentPixel < count($piePixelCoordinates); $i++) {
-                $coordinates = $piePixelCoordinates[$currentPixel];
-                $x = $coordinates[0];
-                $y = $coordinates[1];
-
-                $canvas[$y][$x] = $this->colorize($this->fullBlock, $color);
-                $currentPixel++;
-            }
-        }
+        return $angle;
     }
 
     /**
-     * Get the maximum label length
-     *
-     * @return int Maximum label length
+     * Check if angle is within range (handling wraparound)
      */
-    private function getMaxLabelLength(): int
+    private function angleInRange(float $angle, float $start, float $end): bool
     {
-        $maxLength = 0;
-        foreach (array_keys($this->data) as $label) {
-            $length = strlen((string) $label);
-            if ($length > $maxLength) {
-                $maxLength = $length;
+        // Normalize all angles to [0, 2*PI) range
+        $angle = $this->normalizeAngle($angle);
+        $start = $this->normalizeAngle($start);
+        $end = $this->normalizeAngle($end);
+
+        // Handle segment that crosses the 0/2*PI boundary
+        if ($end < $start) {
+            return $angle >= $start || $angle < $end;
+        }
+
+        return $angle >= $start && $angle < $end;
+    }
+
+    /**
+     * Count number of set bits
+     */
+    private function countBits(int $n): int
+    {
+        $count = 0;
+        while ($n) {
+            $count += $n & 1;
+            $n >>= 1;
+        }
+
+        return $count;
+    }
+
+    /**
+     * Draw the legend
+     *
+     * @param  array<int, array{label: string|int, value: int|float, percentage: float, startAngle: float, endAngle: float}>  $segments
+     * @param  array<int, string>  $colors
+     */
+    private function drawLegend(array $segments, array $colors): string
+    {
+        $output = '';
+        $maxLabelLen = 0;
+
+        foreach ($segments as $segment) {
+            $len = strlen((string) $segment['label']);
+            if ($len > $maxLabelLen) {
+                $maxLabelLen = $len;
             }
         }
 
-        return $maxLength;
+        $maxLabelLen = min($maxLabelLen, 15);
+
+        foreach ($segments as $i => $segment) {
+            $label = str_pad(
+                substr((string) $segment['label'], 0, $maxLabelLen),
+                $maxLabelLen
+            );
+            $marker = $this->colorize('●', $colors[$i]);
+            $output .= sprintf(
+                "  %s %s %5.1f%% (%s)\n",
+                $marker,
+                $label,
+                $segment['percentage'],
+                number_format($segment['value'])
+            );
+        }
+
+        return $output;
     }
 }

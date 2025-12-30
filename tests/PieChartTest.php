@@ -9,10 +9,11 @@ test('renders pie chart with data', function () {
 
     $output = $chart->render();
 
-    expect($output)->toContain('█')
-        ->toContain('A')
+    // Uses Braille characters for rendering
+    expect($output)->toContain('A')
         ->toContain('B')
-        ->toContain('%');
+        ->toContain('%')
+        ->toContain('●'); // Legend markers
 });
 
 test('renders pie chart with title', function () {
